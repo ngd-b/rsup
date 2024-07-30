@@ -12,3 +12,9 @@ serde = "1.0.204"
 serde_derive = "1.0.204"
 serde_json = "1.0.120"
 tokio = { version = "1.39.2", features = ["full"] }
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3

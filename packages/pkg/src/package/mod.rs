@@ -5,6 +5,10 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fs::File, io::BufReader, path::Path};
 
+/// define the attributes of package.json
+///
+/// the `dependencies` and `devDependencies` are optional
+///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PkgJson {
     pub name: String,
@@ -13,6 +17,11 @@ pub struct PkgJson {
     #[serde(rename = "devDependencies")]
     pub dev_dependencies: Option<HashMap<String, String>>,
 }
+
+/// define the attributes of package info
+///
+/// the main attributes are `name`, `description`, `dist-tags` and `versions`.
+///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PkgInfo {
     pub name: String,
@@ -27,12 +36,30 @@ pub struct DistTags {
     pub latest: String,
 }
 
+/// read package.json from path
+///
+/// ```
+/// let pkg_file_path = Path::new(&args.dir).join("package.json");
+///
+/// read_pkg_json(&pkg_file_path)
+/// ```
+///
 pub fn read_pkg_json<P: AsRef<Path>>(path: P) -> Result<PkgJson, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let package = serde_json::from_reader(reader)?;
     Ok(package)
 }
+
+/// fetch package info from registry.npmjs.org or registry.npmmirror.com
+///
+/// ```
+/// let client: Client = Client::new();
+///
+/// let name = "vue";
+/// fetch_pkg_info(&client, name).await
+/// ```
+///
 pub async fn fetch_pkg_info(
     client: &Client,
     pkg_name: &str,
@@ -50,6 +77,8 @@ pub async fn fetch_pkg_info(
     }
 }
 
+/// compare version
+///
 pub fn compare_version(
     current_v: &str,
     latest_v: &str,
@@ -67,7 +96,6 @@ pub fn compare_version(
     vs.sort();
     vs.into_iter().map(|v| v.to_string()).collect()
 }
-
 fn clear_version(v: &str) -> String {
     let re = Regex::new(r"^[^\d]*(\d+\.\d+\.\d+).*").unwrap();
     re.captures(v)
