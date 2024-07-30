@@ -1,0 +1,19 @@
+{
+  "name": "rsup",
+  "version": "0.1.0",
+  "description": "分析前端项目依赖，并给出升级建议",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "hboot",
+    "email": "bobolity@163.com"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "husky": "^9.1.2"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "commitlint": "commitlint --edit"
+  }
+}
