@@ -5,7 +5,8 @@
 use std::path::Path;
 
 use clap::Parser;
-use package::{compare_version, fetch_pkg_info, read_pkg_json};
+use package::package_info::{compare_version, fetch_pkg_info};
+use package::package_json::read_pkg_json;
 mod package;
 use reqwest::Client;
 
@@ -14,6 +15,8 @@ use reqwest::Client;
 pub struct Args {
     #[arg(short, long, default_value = ".")]
     pub dir: String,
+    #[arg(short, long)]
+    pub list: bool,
 }
 
 /// the fun used to run the program
@@ -29,8 +32,8 @@ pub async fn run(args: Args) {
 
     match read_pkg_json(&pkg_file_path) {
         Ok(pkg) => {
-            println!("Package name: {}", pkg.name);
-            println!("Version: {}", pkg.version);
+            println!("Package name: {}", pkg.name.unwrap());
+            println!("Version: {}", pkg.version.unwrap());
 
             //
             let client: Client = Client::new();
