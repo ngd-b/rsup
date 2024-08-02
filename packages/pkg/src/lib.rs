@@ -2,11 +2,13 @@
 //!
 //! it will read the package.json file and check if there are any outdated dependencies
 //!
+use std::collections::HashMap;
 use std::path::Path;
 
 use clap::Parser;
 use package::package_info::{compare_version, fetch_pkg_info};
 use package::package_json::read_pkg_json;
+use package::Pkg;
 mod package;
 use reqwest::Client;
 
@@ -27,28 +29,30 @@ pub struct Args {
 /// pkg::run(pkg::Args { dir: "." });
 ///
 /// ```
-pub async fn run(args: Args) {
+pub async fn run(args: Args) -> Result<Pkg, Box<dyn std::error::Error>> {
     let pkg_file_path = Path::new(&args.dir).join("package.json");
+
+    let mut res = Pkg::new();
 
     match read_pkg_json(&pkg_file_path) {
         Ok(pkg) => {
-            println!("Package name: {}", pkg.name.unwrap());
-            println!("Version: {}", pkg.version.unwrap());
-
+            res.name = pkg.name.unwrap();
+            res.version = pkg.version.unwrap();
+            res.description = pkg.description.unwrap();
             //
             let client: Client = Client::new();
             if let Some(dev_dep) = pkg.dev_dependencies {
+                res.dev_dependencies = HashMap::new();
                 for (name, version) in dev_dep.iter() {
-                    println!("dev_dep: {} @ {}", name, version);
-
                     match fetch_pkg_info(&client, name).await {
                         Ok(info) => {
-                            println!("Latest version: {:#?}", info.dist_tags.latest);
+                            let mut new_info = info.clone();
                             // 输出最新版本之间的版本
                             let versions =
-                                compare_version(version, &info.dist_tags.latest, &info.versions);
+                                compare_version(version, &info.dist_tags.latest, info.versions);
 
-                            println!("Versions between {:?}", versions);
+                            new_info.versions = versions;
+                            res.dev_dependencies.insert(name.to_string(), new_info);
                         }
                         Err(e) => {
                             println!("Error fetching info for {}: {}", name, e);
@@ -59,4 +63,6 @@ pub async fn run(args: Args) {
         }
         Err(e) => eprintln!("Error reading package.json: {}", e),
     }
+
+    Ok(res)
 }

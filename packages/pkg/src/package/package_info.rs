@@ -9,7 +9,7 @@ use std::collections::HashMap;
 ///
 /// the main attributes are `name`, `description`, `dist-tags` and `versions`.
 ///
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgInfo {
     pub name: String,
     pub description: Option<String>,
@@ -20,24 +20,24 @@ pub struct PkgInfo {
     pub dist_tags: DistTags,
     pub versions: HashMap<String, VersionInfo>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DistTags {
     pub latest: String,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Dist {
     pub shasum: Option<String>,
     pub size: Option<usize>,
     pub tarball: Option<String>,
     pub integrity: Option<String>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Memeber {
     pub name: String,
     pub email: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VersionInfo {
     pub name: String,
     pub version: String,
@@ -72,11 +72,11 @@ pub async fn fetch_pkg_info(
 pub fn compare_version(
     current_v: &str,
     latest_v: &str,
-    all_v: &HashMap<String, VersionInfo>,
-) -> Vec<String> {
+    all_v: HashMap<String, VersionInfo>,
+) -> HashMap<String, VersionInfo> {
     let clear_current_v = clear_version(current_v);
     let c_v = Version::parse(&clear_current_v).unwrap();
-    let l_v = Version::parse(latest_v).unwrap();
+    let l_v = Version::parse(&latest_v).unwrap();
 
     let mut vs: Vec<Version> = all_v
         .keys()
@@ -85,7 +85,16 @@ pub fn compare_version(
         .collect();
 
     vs.sort();
-    vs.into_iter().map(|v| v.to_string()).collect()
+    // vs.into_iter()
+    //     .filter_map(|v| all_v.get(&v.to_string()).cloned())
+    //     .collect()
+    let mut res: HashMap<String, VersionInfo> = HashMap::new();
+    for v in vs {
+        if let Some(info) = all_v.get(&v.to_string()).cloned() {
+            res.insert(v.to_string(), info);
+        }
+    }
+    res
 }
 fn clear_version(v: &str) -> String {
     let re = Regex::new(r"^[^\d]*(\d+\.\d+\.\d+).*").unwrap();

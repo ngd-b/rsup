@@ -17,6 +17,13 @@ async fn main() {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Pkg(args) => pkg::run(args).await,
+        Commands::Pkg(args) => match pkg::run(args).await {
+            Ok(res) => {
+                println!("{:#?}", res);
+            }
+            Err(e) => {
+                eprintln!("Error reading package.json: {}", e)
+            }
+        },
     }
 }

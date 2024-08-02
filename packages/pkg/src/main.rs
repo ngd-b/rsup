@@ -6,5 +6,12 @@ use tokio;
 async fn main() {
     let args = Args::parse();
 
-    run(args).await;
+    match run(args).await {
+        Ok(res) => {
+            println!("{:#?}", res);
+        }
+        Err(e) => {
+            eprintln!("Error reading package.json: {}", e)
+        }
+    };
 }

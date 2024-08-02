@@ -6,7 +6,7 @@ use std::{collections::HashMap, fs::File, io::BufReader, path::Path};
 ///
 /// the `dependencies` and `devDependencies` are optional
 ///
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgJson {
     pub name: Option<String>,
     pub version: Option<String>,
