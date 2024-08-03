@@ -4,8 +4,9 @@ pub mod package_info;
 pub mod package_json;
 
 use package_info::PkgInfo;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pkg {
     pub name: String,
     pub version: String,

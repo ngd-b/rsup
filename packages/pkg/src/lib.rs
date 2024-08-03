@@ -8,8 +8,8 @@ use std::path::Path;
 use clap::Parser;
 use package::package_info::{compare_version, fetch_pkg_info};
 use package::package_json::read_pkg_json;
-use package::Pkg;
-mod package;
+pub use package::Pkg;
+pub mod package;
 use reqwest::Client;
 
 #[derive(Parser, Debug)]

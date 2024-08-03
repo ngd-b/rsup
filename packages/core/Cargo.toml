@@ -7,3 +7,4 @@ edition = "2021"
 clap = { workspace = true, features = ["derive"] }
 pkg = { path = "../pkg" }
 tokio = { version = "1.39.2", features = ["full"] }
+web = { version = "0.1.0", path = "../web" }
