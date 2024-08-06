@@ -29,7 +29,7 @@ pub struct Args {
 /// pkg::run(pkg::Args { dir: "." });
 ///
 /// ```
-pub async fn run(args: Args) -> Result<Pkg, Box<dyn std::error::Error>> {
+pub async fn run(args: Args) -> Result<Pkg, Box<dyn std::error::Error + Send + 'static>> {
     let pkg_file_path = Path::new(&args.dir).join("package.json");
 
     let mut res = Pkg::new();
