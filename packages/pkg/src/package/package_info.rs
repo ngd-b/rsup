@@ -1,8 +1,8 @@
 use regex::Regex;
 use reqwest::Client;
+
 use semver::Version;
 use serde_derive::{Deserialize, Serialize};
-
 use std::collections::HashMap;
 
 /// define the attributes of package info
@@ -56,7 +56,7 @@ pub struct VersionInfo {
 pub async fn fetch_pkg_info(
     client: &Client,
     pkg_name: &str,
-) -> Result<PkgInfo, Box<dyn std::error::Error>> {
+) -> Result<PkgInfo, Box<dyn std::error::Error + Send + Sync>> {
     // let url = format!("https://registry.npmjs.org/{}", pkg_name);
     let url = format!("https://registry.npmmirror.com/{}", pkg_name);
     println!("Fetching info for: {}", url);
@@ -64,9 +64,14 @@ pub async fn fetch_pkg_info(
 
     if res.status().is_success() {
         let info = res.json().await?;
+
         Ok(info)
     } else {
-        Err(format!("Failed to fetch package info: HTTP {}", res.status()).into())
+        let error_message = format!("Request failed with status code: {}", res.status());
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            error_message,
+        )))
     }
 }
 pub fn compare_version(

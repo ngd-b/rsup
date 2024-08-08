@@ -5,6 +5,7 @@ members = ["packages/core", "packages/pkg", "packages/web"]
 
 [workspace.dependencies]
 clap = "4"
+anyhow = "1.0.86"
 
 [profile.dev]
 opt-level = 0

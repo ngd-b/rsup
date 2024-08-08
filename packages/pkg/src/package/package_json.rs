@@ -17,7 +17,9 @@ pub struct PkgJson {
     pub dev_dependencies: Option<HashMap<String, String>>,
 }
 
-pub fn read_pkg_json<P: AsRef<Path>>(path: P) -> Result<PkgJson, Box<dyn std::error::Error>> {
+pub fn read_pkg_json<P: AsRef<Path>>(
+    path: P,
+) -> Result<PkgJson, Box<dyn std::error::Error + Send + Sync>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let package = serde_json::from_reader(reader)?;
