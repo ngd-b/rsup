@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix = "0.13.5"
 actix-web = "4.8.0"
+actix-ws = "0.3.0"
+futures-util = "0.3.30"
 pkg = { version = "0.1.0", path = "../pkg" }
 serde = "1.0.204"
 serde_json = "1.0.122"
