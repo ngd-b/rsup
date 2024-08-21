@@ -5,7 +5,7 @@
 
 use std::error::Error;
 use std::path::Path;
-use std::sync::mpsc::Sender;
+
 use std::sync::Arc;
 
 use clap::Parser;
@@ -14,6 +14,7 @@ use package::package_json::read_pkg_json;
 pub use package::Pkg;
 pub mod package;
 use reqwest::Client;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 
 #[derive(Parser, Debug)]
@@ -49,7 +50,7 @@ pub async fn run(
             (*res).version = pkg.version.unwrap();
             (*res).description = pkg.description.unwrap();
             // 数据更新就通知
-            tx.send(()).unwrap();
+            tx.send(()).await.unwrap();
 
             let client = Client::new();
             if let Some(dev_dep) = pkg.dev_dependencies {
@@ -61,10 +62,11 @@ pub async fn run(
                             let versions =
                                 compare_version(version, &info.dist_tags.latest, info.versions);
 
+                            new_info.version = Some(version.to_string());
                             new_info.versions = versions;
                             (*res).dev_dependencies.insert(name.to_string(), new_info);
                             // 数据更新就通知
-                            tx.send(()).unwrap();
+                            tx.send(()).await.unwrap();
                         }
                         Err(e) => {
                             println!("Error fetching info for {}: {}", name, e);
@@ -81,10 +83,11 @@ pub async fn run(
                             let versions =
                                 compare_version(version, &info.dist_tags.latest, info.versions);
 
+                            new_info.version = Some(version.to_string());
                             new_info.versions = versions;
                             (*res).dev_dependencies.insert(name.to_string(), new_info);
                             // 数据更新就通知
-                            tx.send(()).unwrap();
+                            tx.send(()).await.unwrap();
                         }
                         Err(e) => {
                             println!("Error fetching info for {}: {}", name, e);

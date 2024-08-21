@@ -12,6 +12,7 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgInfo {
     pub name: String,
+    pub version: Option<String>,
     pub description: Option<String>,
     pub homepage: Option<String>,
     pub keywords: Option<Vec<String>>,
@@ -38,13 +39,19 @@ pub struct Memeber {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum Author {
+    Memeber(Memeber),
+    String(String),
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VersionInfo {
     pub name: String,
-    pub version: String,
+    pub version: Option<String>,
     pub homepage: Option<String>,
     pub description: Option<String>,
     pub keywords: Option<Vec<String>>,
-    pub author: Option<Memeber>,
+    pub author: Option<Author>,
     pub maintainers: Option<Vec<Memeber>>,
     pub dependencies: Option<HashMap<String, String>>,
     #[serde(rename = "devDependencies")]
@@ -57,13 +64,15 @@ pub async fn fetch_pkg_info(
     client: &Client,
     pkg_name: &str,
 ) -> Result<PkgInfo, Box<dyn std::error::Error + Send + Sync>> {
-    // let url = format!("https://registry.npmjs.org/{}", pkg_name);
-    let url = format!("https://registry.npmmirror.com/{}", pkg_name);
+    let url = format!("https://registry.npmjs.org/{}", pkg_name);
+    // let url = format!("https://registry.npmmirror.com/{}", pkg_name);
     println!("Fetching info for: {}", url);
     let res = client.get(&url).send().await?;
 
     if res.status().is_success() {
-        let info = res.json().await?;
+        let body = res.text().await?;
+
+        let info: PkgInfo = serde_json::from_str(&body)?;
 
         Ok(info)
     } else {

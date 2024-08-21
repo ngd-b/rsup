@@ -1,8 +1,8 @@
-use std::sync::mpsc::channel;
 use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use pkg;
+use tokio::sync::mpsc::channel;
 use tokio::sync::Mutex;
 use tokio::task;
 use web;
@@ -27,7 +27,7 @@ async fn main() {
 
     // let (tx, rx) = broadcast::channel(10);
     // let package = Pakcage::new();
-    let (tx, rx) = channel();
+    let (tx, rx) = channel(100);
 
     match args.command {
         Commands::Pkg(args) => {
@@ -46,5 +46,5 @@ async fn main() {
     }
 
     // web::run(Arc::clone(&package.pkg), package.sender.clone()).await;
-    web::run(Arc::clone(&data.clone()), rx).await;
+    web::run(Arc::clone(&data.clone()), rx).await.unwrap();
 }

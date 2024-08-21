@@ -1,15 +1,18 @@
-use std::sync::{mpsc::channel, Arc};
+use std::sync::Arc;
 
 use clap::Parser;
 use pkg::{run, Args};
-use tokio::{self, sync::Mutex};
+use tokio::{
+    self,
+    sync::{mpsc::channel, Mutex},
+};
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
 
     let data = Arc::new(Mutex::new(pkg::Pkg::new()));
-    let (tx, rx) = channel();
+    let (tx, rx) = channel(100);
 
     let data_clone = data.clone();
     match run(args, data_clone, tx).await {
@@ -21,7 +24,10 @@ async fn main() {
         }
     };
 
-    while let Ok(_) = rx.recv() {
-        println!("recive data : {:#?}", data)
+    let mut rx = rx;
+    loop {
+        if let Some(_) = rx.recv().await {
+            println!("recive data : {:#?}", data)
+        };
     }
 }
