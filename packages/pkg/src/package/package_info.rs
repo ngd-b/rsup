@@ -3,7 +3,7 @@ use reqwest::Client;
 
 use semver::Version;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 /// define the attributes of package info
 ///
@@ -20,6 +20,25 @@ pub struct PkgInfo {
     #[serde(rename = "dist-tags")]
     pub dist_tags: DistTags,
     pub versions: HashMap<String, VersionInfo>,
+    #[serde(default)]
+    pub is_finish: bool,
+}
+impl Default for PkgInfo {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            version: None,
+            description: None,
+            homepage: None,
+            keywords: None,
+            license: None,
+            dist_tags: DistTags {
+                latest: String::new(),
+            },
+            versions: HashMap::new(),
+            is_finish: false,
+        }
+    }
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DistTags {
@@ -60,6 +79,7 @@ pub struct VersionInfo {
     pub peer_dependencies: Option<HashMap<String, String>>,
     pub dist: Option<Dist>,
 }
+
 pub async fn fetch_pkg_info(
     client: &Client,
     pkg_name: &str,
@@ -67,11 +87,18 @@ pub async fn fetch_pkg_info(
     let url = format!("https://registry.npmjs.org/{}", pkg_name);
     // let url = format!("https://registry.npmmirror.com/{}", pkg_name);
     println!("Fetching info for: {}", url);
-    let res = client.get(&url).send().await?;
 
+    let res = client
+        .get(&url)
+        //  .timeout(Duration::from_millis(30))
+        .send()
+        .await?;
+
+    println!("Received response with status: {}", res.status());
     if res.status().is_success() {
         let body = res.text().await?;
 
+        println!("Response body length: {}", body.len());
         let info: PkgInfo = serde_json::from_str(&body)?;
 
         Ok(info)

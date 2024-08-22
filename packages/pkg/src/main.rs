@@ -15,17 +15,21 @@ async fn main() {
     let (tx, rx) = channel(100);
 
     let data_clone = data.clone();
-    match run(args, data_clone, tx).await {
-        Ok(res) => {
-            println!("{:#?}", res);
-        }
-        Err(e) => {
-            eprintln!("Error reading package.json: {}", e)
-        }
-    };
+
+    tokio::spawn(async move {
+        match run(args, data_clone, tx).await {
+            Ok(res) => {
+                println!("{:#?}", res);
+            }
+            Err(e) => {
+                eprintln!("Error reading package.json: {}", e)
+            }
+        };
+    });
 
     let mut rx = rx;
     loop {
+        println!("1");
         if let Some(_) = rx.recv().await {
             println!("recive data : {:#?}", data)
         };

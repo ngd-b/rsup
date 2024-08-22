@@ -27,7 +27,7 @@ async fn main() {
 
     // let (tx, rx) = broadcast::channel(10);
     // let package = Pakcage::new();
-    let (tx, rx) = channel(100);
+    let (tx, rx) = channel(1);
 
     match args.command {
         Commands::Pkg(args) => {
