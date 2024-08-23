@@ -9,7 +9,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use clap::Parser;
-use futures_util::{stream, StreamExt};
+// use futures_util::{stream, StreamExt};
 use package::package_info::{compare_version, fetch_pkg_info};
 use package::package_json::read_pkg_json;
 pub use package::Pkg;
@@ -47,9 +47,9 @@ pub async fn run(
 
     match read_pkg_json(&pkg_file_path) {
         Ok(pkg) => {
-            (*res).name = pkg.name.unwrap();
-            (*res).version = pkg.version.unwrap();
-            (*res).description = pkg.description.unwrap();
+            (*res).name = pkg.name;
+            (*res).version = pkg.version;
+            (*res).description = pkg.description;
             // 数据更新就通知
             tx.send(()).await.unwrap();
 
@@ -61,8 +61,9 @@ pub async fn run(
                                version: String,
                                res: Arc<Mutex<Pkg>>,
                                client: Client,
-                               tx: Sender<()>| {
-                async move {
+                               tx: Sender<()>,
+                               is_dev| {
+                tokio::spawn(async move {
                     println!("Starting task for package: {}", name);
                     match fetch_pkg_info(&client, &name).await {
                         Ok(info) => {
@@ -75,8 +76,15 @@ pub async fn run(
                             new_info.is_finish = true;
 
                             println!("finish fetch pkg info for:{}", name);
-                            // let mut res = res.lock().await;
-                            // res.dev_dependencies.insert(name.clone(), new_info);
+                            {
+                                let mut res = res.lock().await;
+                                if is_dev {
+                                    res.dev_dependencies.insert(name.clone(), new_info);
+                                } else {
+                                    res.dependencies.insert(name.clone(), new_info);
+                                }
+                            }
+
                             if let Err(e) = tx.send(()).await {
                                 eprintln!("Error sending update signal: {}", e);
                             };
@@ -87,36 +95,47 @@ pub async fn run(
                             println!("Error fetching info for {}: {}", name, e);
                         }
                     }
-                }
+                });
             };
             if let Some(dev_dep) = pkg.dev_dependencies {
                 for (name, version) in dev_dep.iter() {
+                    (*res)
+                        .dev_dependencies
+                        .insert(name.to_string(), Default::default());
+                    // 数据更新就通知
+                    tx.send(()).await.unwrap();
                     let task = create_task(
                         name.to_string(),
                         version.to_string(),
                         data.clone(),
                         client.clone(),
                         tx.clone(),
+                        true,
                     );
                     tasks.push(task);
                 }
             }
             if let Some(dep) = pkg.dependencies {
+                // 提前展示依赖名称
                 for (name, version) in dep.iter() {
+                    (*res)
+                        .dependencies
+                        .insert(name.to_string(), Default::default());
+                    // 数据更新就通知
+                    tx.send(()).await.unwrap();
                     let task = create_task(
                         name.to_string(),
                         version.to_string(),
                         data.clone(),
                         client.clone(),
                         tx.clone(),
+                        false,
                     );
                     tasks.push(task);
                 }
             }
 
-            stream::iter(tasks)
-                .for_each_concurrent(1, |task| task)
-                .await;
+            // let _ = stream::iter(tasks).for_each_concurrent(1, |task| task);
         }
         Err(e) => eprintln!("Error reading package.json: {}", e),
     }
