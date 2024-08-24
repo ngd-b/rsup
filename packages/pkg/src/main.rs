@@ -16,16 +16,7 @@ async fn main() {
 
     let data_clone = data.clone();
 
-    tokio::spawn(async move {
-        match run(args, data_clone, tx).await {
-            Ok(res) => {
-                println!("{:#?}", res);
-            }
-            Err(e) => {
-                eprintln!("Error reading package.json: {}", e)
-            }
-        };
-    });
+    tokio::task::spawn(async move { run(args, data_clone, tx).await });
 
     let mut rx = rx;
     loop {

@@ -3,7 +3,6 @@
 //! it will read the package.json file and check if there are any outdated dependencies
 //!
 
-use std::error::Error;
 use std::path::Path;
 
 use std::sync::Arc;
@@ -33,11 +32,7 @@ pub struct Args {
 /// pkg::run(pkg::Args { dir: "." });
 ///
 /// ```
-pub async fn run(
-    args: Args,
-    data: Arc<Mutex<Pkg>>,
-    tx: Sender<()>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
     let pkg_file_path = Path::new(&args.dir).join("package.json");
 
     match read_pkg_json(&pkg_file_path) {
@@ -53,7 +48,7 @@ pub async fn run(
             }
 
             // 数据更新就通知
-            tx.send(()).await?;
+            tx.send(()).await.unwrap();
 
             let mut tasks = Vec::new();
 
@@ -67,44 +62,34 @@ pub async fn run(
                                is_dev| {
                 tokio::spawn(async move {
                     println!("Starting task for package: {}", name);
-                    match fetch_pkg_info(&client, &name).await {
-                        Ok(info) => {
-                            let mut new_info = info.clone();
-                            let versions =
-                                compare_version(&version, &info.dist_tags.latest, info.versions);
+                    let info = fetch_pkg_info(&client, &name).await.unwrap();
 
-                            new_info.version = Some(version.clone());
-                            new_info.versions = versions;
-                            new_info.is_finish = true;
+                    let mut new_info = info.clone();
+                    let versions = compare_version(&version, &info.dist_tags.latest, info.versions);
 
-                            println!("finish fetch pkg info for:{}", name);
-                            {
-                                let mut res = res.lock().await;
-                                if is_dev {
-                                    res.dev_dependencies.insert(name.clone(), new_info);
-                                } else {
-                                    res.dependencies.insert(name.clone(), new_info);
-                                }
-                            }
+                    new_info.version = Some(version.clone());
+                    new_info.versions = versions;
+                    new_info.is_finish = true;
 
-                            if let Err(e) = tx.send(()).await {
-                                eprintln!("Error sending update signal: {}", e);
-                            };
-
-                            println!("Completed task for package: {}", name);
-                        }
-                        Err(e) => {
-                            println!("Error fetching info for {}: {}", name, e);
+                    println!("finish fetch pkg info for:{}", name);
+                    {
+                        let mut res = res.lock().await;
+                        if is_dev {
+                            res.dev_dependencies.insert(name.clone(), new_info);
+                        } else {
+                            res.dependencies.insert(name.clone(), new_info);
                         }
                     }
+
+                    if let Err(e) = tx.send(()).await {
+                        eprintln!("Error sending update signal: {}", e);
+                    };
+
+                    println!("Completed task for package: {}", name);
                 });
             };
             if let Some(dev_dep) = pkg.dev_dependencies {
                 for (name, version) in dev_dep.iter() {
-                    // (*res)
-                    //     .dev_dependencies
-                    //     .insert(name.to_string(), Default::default());
-                    // 数据更新就通知
                     tx.send(()).await.unwrap();
                     let task = create_task(
                         name.to_string(),
@@ -120,10 +105,6 @@ pub async fn run(
             if let Some(dep) = pkg.dependencies {
                 // 提前展示依赖名称
                 for (name, version) in dep.iter() {
-                    // (*res)
-                    //     .dependencies
-                    //     .insert(name.to_string(), Default::default());
-                    // 数据更新就通知
                     tx.send(()).await.unwrap();
                     let task = create_task(
                         name.to_string(),
@@ -140,7 +121,7 @@ pub async fn run(
             // let _ = stream::iter(tasks).for_each_concurrent(1, |task| task);
         }
         Err(e) => eprintln!("Error reading package.json: {}", e),
-    }
+    };
 
-    Ok(())
+    // Ok(())
 }

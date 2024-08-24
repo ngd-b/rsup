@@ -83,7 +83,7 @@ pub struct VersionInfo {
 pub async fn fetch_pkg_info(
     client: &Client,
     pkg_name: &str,
-) -> Result<PkgInfo, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<PkgInfo, Box<dyn std::error::Error>> {
     let url = format!("https://registry.npmjs.org/{}", pkg_name);
     // let url = format!("https://registry.npmmirror.com/{}", pkg_name);
     println!("Fetching info for: {}", url);

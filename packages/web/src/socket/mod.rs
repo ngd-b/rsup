@@ -5,7 +5,6 @@ use futures_util::StreamExt;
 use pkg::Pkg;
 use tokio::sync::{mpsc::Receiver, Mutex};
 
-use serde_json::json;
 pub struct Ms {
     pub data: Arc<Mutex<Pkg>>,
     pub rx: Receiver<()>,
@@ -15,9 +14,12 @@ impl Ms {
     pub async fn send_message(&self, mut session: Session) {
         let locked_data = self.data.lock().await;
 
-        let json = json!(&locked_data.clone());
+        // let json = json!(&locked_data.clone());
 
-        if let Err(e) = session.text(serde_json::to_string(&json).unwrap()).await {
+        if let Err(e) = session
+            .text(serde_json::to_string(&locked_data.clone()).unwrap())
+            .await
+        {
             eprintln!("Failed to send message to client: {:?}", e);
         }
     }
