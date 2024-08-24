@@ -40,6 +40,10 @@ impl Ms {
             tokio::select! {
                 Some(Ok(msg)) = msg_stream.next() =>{
                     match msg {
+                        Message::Close(reason) => {
+                            // 关闭连接
+                            println!("client close with reason: {:?}", reason);
+                        }
                         Message::Ping(bytes) => {
                             if session.pong(&bytes).await.is_err() {
                                 return;
