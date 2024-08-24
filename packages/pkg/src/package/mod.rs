@@ -8,6 +8,7 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pkg {
+    pub path: String,
     pub name: Option<String>,
     pub version: Option<String>,
     pub description: Option<String>,
@@ -19,6 +20,7 @@ pub struct Pkg {
 impl Pkg {
     pub fn new() -> Self {
         Pkg {
+            path: String::new(),
             name: None,
             version: None,
             description: None,

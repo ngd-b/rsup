@@ -24,6 +24,14 @@ pub struct Args {
     pub dir: String,
 }
 
+/// 更新某个npm依赖包
+///
+/// 来自于web服务调用
+pub async fn update_dependencies(file_path: String) -> Result<(), Box<dyn std::error::Error>> {
+    println!("will update dep info :{}", &file_path);
+
+    Ok(())
+}
 /// the fun used to run the program
 ///
 /// # example
@@ -33,13 +41,19 @@ pub struct Args {
 ///
 /// ```
 pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
-    let pkg_file_path = Path::new(&args.dir).join("package.json");
+    let mut file_path = args.dir.clone();
+    if !args.dir.ends_with("package.json") {
+        file_path.push_str("/package.json");
+    }
+
+    let pkg_file_path = Path::new(&file_path);
 
     match read_pkg_json(&pkg_file_path) {
         Ok(pkg) => {
             {
                 // 用完即销毁
                 let mut res = data.lock().await;
+                res.path = pkg_file_path.to_str().unwrap().to_string();
                 res.name = pkg.name;
                 res.version = pkg.version;
                 res.description = pkg.description;

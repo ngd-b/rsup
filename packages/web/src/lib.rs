@@ -12,7 +12,7 @@ use pkg::Pkg;
 use tokio::sync::{mpsc::Receiver, Mutex};
 mod socket;
 use socket::Ms;
-
+mod api;
 /// 获取静态文件路径
 pub fn static_file_path() -> String {
     format!("{}/src/static", env!("CARGO_MANIFEST_DIR"))
@@ -20,9 +20,6 @@ pub fn static_file_path() -> String {
 
 #[get("/")]
 async fn index() -> impl Responder {
-    // let pkg = get_data(data).await;
-
-    // HttpResponse::Ok().json(pkg)
     let file_path = format!("{}/index.html", static_file_path());
 
     println!("service statick index html {}", file_path);
@@ -73,6 +70,7 @@ pub async fn run(
         App::new()
             .app_data(web::Data::new(Arc::clone(&data)))
             .service(index)
+            .service(web::scope("/api").configure(api::api_config))
             .service(Files::new("/static", static_file_path()).prefer_utf8(true))
             .app_data(ms.clone())
             .route("/ws", web::get().to(socket_index))

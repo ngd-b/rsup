@@ -24,6 +24,11 @@ impl Ms {
         }
     }
 
+    /// websocket服务消息
+    ///
+    /// - 处理socket消息
+    ///
+    /// - 处理channel通道消息
     pub async fn handle_message(
         ms: Arc<Mutex<Ms>>,
         mut session: Session,
