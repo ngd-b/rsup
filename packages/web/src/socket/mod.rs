@@ -4,6 +4,7 @@ use actix_ws::{Message, MessageStream, Session};
 use futures_util::StreamExt;
 use pkg::Pkg;
 use tokio::sync::{mpsc::Receiver, Mutex};
+use tokio::time::{timeout, Duration};
 
 pub struct Ms {
     pub data: Arc<Mutex<Pkg>>,
@@ -15,11 +16,10 @@ impl Ms {
         let locked_data = self.data.lock().await;
 
         // let json = json!(&locked_data.clone());
+        let json = serde_json::to_string(&locked_data.clone()).unwrap();
 
-        if let Err(e) = session
-            .text(serde_json::to_string(&locked_data.clone()).unwrap())
-            .await
-        {
+        println!("Sending message length: {}", json.len());
+        if let Err(e) = session.text(json).await {
             eprintln!("Failed to send message to client: {:?}", e);
         }
     }
@@ -30,13 +30,16 @@ impl Ms {
         mut msg_stream: MessageStream,
     ) {
         // 向前端发送消息
-        // session.text("Hello").await.unwrap();
-
-        let mut ms_lock = ms.lock().await;
-
-        ms_lock.send_message(session.clone()).await;
+        let ms_clone = ms.clone();
+        let session_clone = session.clone();
+        tokio::spawn(async move {
+            let ms_lock = ms_clone.lock().await;
+            ms_lock.send_message(session_clone).await;
+        });
 
         loop {
+            let mut ms_lock = ms.lock().await;
+
             tokio::select! {
                 Some(Ok(msg)) = msg_stream.next() =>{
                     match msg {
@@ -57,10 +60,30 @@ impl Ms {
                     }
                 }
 
-                Some(_) = ms_lock.rx.recv()=> {
-                    println!("Got message");
-                    // session.text("New data available").await.unwrap();
-                    ms_lock.send_message(session.clone()).await;
+                // Some(_) = ms_lock.rx.recv()=> {
+                //     println!("Got message");
+
+                //     drop(ms_lock);
+
+                //     let ms_lock = ms.lock().await;
+                //
+                //     ms_lock.send_message(session.clone()).await;
+                // }
+                result = timeout(Duration::from_millis(100),ms_lock.rx.recv())=>{
+                    match result{
+                        Ok(Some(_))=>{
+                            drop(ms_lock);
+
+                            let ms_lock = ms.lock().await;
+                            ms_lock.send_message(session.clone()).await;
+                        }
+                        Ok(None)=>{
+                            break;
+                        }
+                        Err(_)=>{
+                            continue;
+                        }
+                    }
                 }
             }
         }

@@ -37,11 +37,15 @@ async fn socket_index(
     let (res, session, msg_stream) = actix_ws::handle(&req, stream)?;
 
     let ms = ms.get_ref().clone();
+    let client_ip = req
+        .connection_info()
+        .realip_remote_addr()
+        .unwrap()
+        .to_string();
+
     actix_web::rt::spawn(async move {
-        println!(
-            "new connection client's ip : {} ",
-            req.connection_info().realip_remote_addr().unwrap()
-        );
+        println!("new connection client's ip : {} ", client_ip);
+
         Ms::handle_message(ms, session, msg_stream).await;
     });
     Ok(res)
