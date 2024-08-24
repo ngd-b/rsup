@@ -3,7 +3,7 @@ use reqwest::Client;
 
 use semver::Version;
 use serde_derive::{Deserialize, Serialize};
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 
 /// define the attributes of package info
 ///
@@ -84,8 +84,8 @@ pub async fn fetch_pkg_info(
     client: &Client,
     pkg_name: &str,
 ) -> Result<PkgInfo, Box<dyn std::error::Error + Send + Sync>> {
-    // let url = format!("https://registry.npmjs.org/{}", pkg_name);
-    let url = format!("https://registry.npmmirror.com/{}", pkg_name);
+    let url = format!("https://registry.npmjs.org/{}", pkg_name);
+    // let url = format!("https://registry.npmmirror.com/{}", pkg_name);
     println!("Fetching info for: {}", url);
 
     let res = client

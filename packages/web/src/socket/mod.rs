@@ -33,6 +33,7 @@ impl Ms {
         let mut ms_lock = ms.lock().await;
 
         ms_lock.send_message(session.clone()).await;
+
         loop {
             tokio::select! {
                 Some(Ok(msg)) = msg_stream.next() =>{

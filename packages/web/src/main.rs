@@ -18,7 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         thread::sleep(std::time::Duration::from_millis(10 * 1000));
 
         let mut data = data_clone.lock().await;
-        (*data).name = "hboot".to_string();
+        data.name = Some("hboot".to_string());
 
         println!("send data and update date");
         tx_clone.send(()).await.unwrap();

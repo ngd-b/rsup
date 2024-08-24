@@ -23,8 +23,6 @@ use tokio::sync::Mutex;
 pub struct Args {
     #[arg(short, long, default_value = ".")]
     pub dir: String,
-    #[arg(short, long)]
-    pub list: bool,
 }
 
 /// the fun used to run the program
@@ -42,16 +40,20 @@ pub async fn run(
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let pkg_file_path = Path::new(&args.dir).join("package.json");
 
-    // let mut res = Pkg::new();
-    let mut res = data.lock().await;
-
     match read_pkg_json(&pkg_file_path) {
         Ok(pkg) => {
-            (*res).name = pkg.name;
-            (*res).version = pkg.version;
-            (*res).description = pkg.description;
+            {
+                // 用完即销毁
+                let mut res = data.lock().await;
+                res.name = pkg.name;
+                res.version = pkg.version;
+                res.description = pkg.description;
+                res.dependencies = Pkg::generate_pkg_info(pkg.dependencies.clone());
+                res.dev_dependencies = Pkg::generate_pkg_info(pkg.dev_dependencies.clone());
+            }
+
             // 数据更新就通知
-            tx.send(()).await.unwrap();
+            tx.send(()).await?;
 
             let mut tasks = Vec::new();
 
@@ -99,9 +101,9 @@ pub async fn run(
             };
             if let Some(dev_dep) = pkg.dev_dependencies {
                 for (name, version) in dev_dep.iter() {
-                    (*res)
-                        .dev_dependencies
-                        .insert(name.to_string(), Default::default());
+                    // (*res)
+                    //     .dev_dependencies
+                    //     .insert(name.to_string(), Default::default());
                     // 数据更新就通知
                     tx.send(()).await.unwrap();
                     let task = create_task(
@@ -118,9 +120,9 @@ pub async fn run(
             if let Some(dep) = pkg.dependencies {
                 // 提前展示依赖名称
                 for (name, version) in dep.iter() {
-                    (*res)
-                        .dependencies
-                        .insert(name.to_string(), Default::default());
+                    // (*res)
+                    //     .dependencies
+                    //     .insert(name.to_string(), Default::default());
                     // 数据更新就通知
                     tx.send(()).await.unwrap();
                     let task = create_task(
