@@ -1,6 +1,7 @@
 use local_ip_address::local_ip;
 use std::sync::Arc;
 
+use actix_cors::Cors;
 use actix_files::{Files, NamedFile};
 use actix_web::{
     get,
@@ -67,9 +68,15 @@ pub async fn run(
     let ms = web::Data::new(Arc::new(Mutex::new(socket_ms)));
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_header()
+            .allow_any_method()
+            .allow_any_origin();
+
         App::new()
             .app_data(web::Data::new(Arc::clone(&data)))
             .service(index)
+            .wrap(cors)
             .service(web::scope("/api").configure(api::api_config))
             .service(Files::new("/static", static_file_path()).prefer_utf8(true))
             .app_data(ms.clone())

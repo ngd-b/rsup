@@ -24,14 +24,6 @@ pub struct Args {
     pub dir: String,
 }
 
-/// 更新某个npm依赖包
-///
-/// 来自于web服务调用
-pub async fn update_dependencies(file_path: String) -> Result<(), Box<dyn std::error::Error>> {
-    println!("will update dep info :{}", &file_path);
-
-    Ok(())
-}
 /// the fun used to run the program
 ///
 /// # example
@@ -104,7 +96,6 @@ pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
             };
             if let Some(dev_dep) = pkg.dev_dependencies {
                 for (name, version) in dev_dep.iter() {
-                    tx.send(()).await.unwrap();
                     let task = create_task(
                         name.to_string(),
                         version.to_string(),
@@ -119,7 +110,6 @@ pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
             if let Some(dep) = pkg.dependencies {
                 // 提前展示依赖名称
                 for (name, version) in dep.iter() {
-                    tx.send(()).await.unwrap();
                     let task = create_task(
                         name.to_string(),
                         version.to_string(),

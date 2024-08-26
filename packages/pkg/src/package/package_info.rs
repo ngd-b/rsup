@@ -80,12 +80,13 @@ pub struct VersionInfo {
     pub dist: Option<Dist>,
 }
 
+/// fetch the package info from registry
 pub async fn fetch_pkg_info(
     client: &Client,
     pkg_name: &str,
 ) -> Result<PkgInfo, Box<dyn std::error::Error>> {
-    let url = format!("https://registry.npmjs.org/{}", pkg_name);
-    // let url = format!("https://registry.npmmirror.com/{}", pkg_name);
+    // let url = format!("https://registry.npmjs.org/{}", pkg_name);
+    let url = format!("https://registry.npmmirror.com/{}", pkg_name);
     println!("Fetching info for: {}", url);
 
     let res = client
@@ -110,6 +111,8 @@ pub async fn fetch_pkg_info(
         )))
     }
 }
+
+/// compare the version and return a new map of last versions
 pub fn compare_version(
     current_v: &str,
     latest_v: &str,
@@ -137,6 +140,8 @@ pub fn compare_version(
     }
     res
 }
+
+/// 清除版本号中的前缀
 fn clear_version(v: &str) -> String {
     let re = Regex::new(r"^[^\d]*(\d+\.\d+\.\d+).*").unwrap();
     re.captures(v)
