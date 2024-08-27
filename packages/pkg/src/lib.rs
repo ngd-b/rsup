@@ -11,10 +11,9 @@ use clap::Parser;
 // use futures_util::{stream, StreamExt};
 use package::package_info::{compare_version, fetch_pkg_info};
 use package::package_json::read_pkg_json;
-pub use package::Pkg;
+use package::{Package, Pkg};
 pub mod package;
 use reqwest::Client;
-use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 
 #[derive(Parser, Debug)]
@@ -32,7 +31,7 @@ pub struct Args {
 /// pkg::run(pkg::Args { dir: "." });
 ///
 /// ```
-pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
+pub async fn run(args: Args, package: Arc<Mutex<Package>>) {
     let mut file_path = args.dir.clone();
     if !args.dir.ends_with("package.json") {
         file_path.push_str("/package.json");
@@ -44,17 +43,17 @@ pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
         Ok(pkg) => {
             {
                 // 用完即销毁
-                let mut res = data.lock().await;
+                let package_lock = package.lock().await;
+                let mut res = package_lock.pkg.lock().await;
                 res.path = pkg_file_path.to_str().unwrap().to_string();
                 res.name = pkg.name;
                 res.version = pkg.version;
                 res.description = pkg.description;
                 res.dependencies = Pkg::generate_pkg_info(pkg.dependencies.clone());
                 res.dev_dependencies = Pkg::generate_pkg_info(pkg.dev_dependencies.clone());
+                // 数据更新就通知
+                package_lock.sender.send(()).await.unwrap();
             }
-
-            // 数据更新就通知
-            tx.send(()).await.unwrap();
 
             let mut tasks = Vec::new();
 
@@ -62,9 +61,8 @@ pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
 
             let create_task = |name: String,
                                version: String,
-                               res: Arc<Mutex<Pkg>>,
                                client: Client,
-                               tx: Sender<()>,
+                               data: Arc<Mutex<Package>>,
                                is_dev| {
                 tokio::spawn(async move {
                     println!("Starting task for package: {}", name);
@@ -79,17 +77,17 @@ pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
 
                     println!("finish fetch pkg info for:{}", name);
                     {
-                        let mut res = res.lock().await;
+                        let data_lock = data.lock().await;
+                        let mut res = data_lock.pkg.lock().await;
                         if is_dev {
                             res.dev_dependencies.insert(name.clone(), new_info);
                         } else {
                             res.dependencies.insert(name.clone(), new_info);
                         }
+                        if let Err(e) = data_lock.sender.send(()).await {
+                            eprintln!("Error sending update signal: {}", e);
+                        };
                     }
-
-                    if let Err(e) = tx.send(()).await {
-                        eprintln!("Error sending update signal: {}", e);
-                    };
 
                     println!("Completed task for package: {}", name);
                 });
@@ -99,9 +97,8 @@ pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
                     let task = create_task(
                         name.to_string(),
                         version.to_string(),
-                        data.clone(),
                         client.clone(),
-                        tx.clone(),
+                        package.clone(),
                         true,
                     );
                     tasks.push(task);
@@ -113,9 +110,8 @@ pub async fn run(args: Args, data: Arc<Mutex<Pkg>>, tx: Sender<()>) {
                     let task = create_task(
                         name.to_string(),
                         version.to_string(),
-                        data.clone(),
                         client.clone(),
-                        tx.clone(),
+                        package.clone(),
                         false,
                     );
                     tasks.push(task);

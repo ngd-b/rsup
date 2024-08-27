@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
-use pkg::{run, Args};
+use pkg::{package, run, Args};
 use tokio::{
     self,
     sync::{mpsc::channel, Mutex},
@@ -11,18 +11,24 @@ use tokio::{
 async fn main() {
     let args = Args::parse();
 
-    let data = Arc::new(Mutex::new(pkg::Pkg::new()));
+    let data = Arc::new(Mutex::new(package::Pkg::new()));
     let (tx, rx) = channel(100);
 
-    let data_clone = data.clone();
+    let package = Arc::new(Mutex::new(package::Package {
+        pkg: data,
+        sender: tx,
+    }));
 
-    tokio::task::spawn(async move { run(args, data_clone, tx).await });
+    // let data_clone = data.clone();
+    let package_clone = package.clone();
+
+    tokio::task::spawn(async move { run(args, package_clone).await });
 
     let mut rx = rx;
     loop {
-        println!("1");
         if let Some(_) = rx.recv().await {
-            println!("recive data : {:#?}", data)
+            let pkg = package.lock().await.pkg.lock().await.clone();
+            println!("recive data : {:#?}", pkg)
         };
     }
 }

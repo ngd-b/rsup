@@ -1,11 +1,11 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, error::Error, sync::Arc};
 
 pub mod package_info;
 pub mod package_json;
 
 use package_info::PkgInfo;
 use serde_derive::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc::Sender, Mutex};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pkg {
@@ -79,5 +79,30 @@ impl Pkg {
         }
 
         res
+    }
+}
+
+/// 全局共享数据对象
+///
+///
+pub struct Package {
+    pub pkg: Arc<Mutex<Pkg>>,
+    pub sender: Sender<()>,
+}
+
+impl Package {
+    pub fn update_pkg(&self) -> Result<(), Box<dyn Error>> {
+        // let mut pkg_lock = self.pkg.lock().unwrap();
+
+        // *pkg_lock = pkg.clone();
+
+        // self.sender.send(pkg)
+
+        Ok(())
+    }
+    pub async fn get_pkg(&self) -> Pkg {
+        let data_lock = self.pkg.lock().await;
+
+        data_lock.clone()
     }
 }
