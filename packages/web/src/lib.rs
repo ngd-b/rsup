@@ -1,3 +1,5 @@
+use std::net::TcpListener;
+
 use local_ip_address::local_ip;
 
 use actix_cors::Cors;
@@ -47,8 +49,23 @@ async fn socket_index(
     Ok(res)
 }
 
+/// 获取可用的端口号
+pub fn check_is_busy_port() -> u16 {
+    let mut port = 8888;
+
+    for _ in 0..20 {
+        if let Ok(_listener) = TcpListener::bind(("0.0.0.0", port)) {
+            break;
+        }
+        port += 1; // 端口被占用，尝试下一个端口
+    }
+
+    port
+}
+
 pub async fn run(data: Package) {
-    let port = 8088;
+    // let port = 8088;
+    let port = check_is_busy_port();
 
     let local_ip = local_ip().expect("Could not get local IP address");
     println!("Server running at:");
@@ -61,7 +78,10 @@ pub async fn run(data: Package) {
             .allow_any_method()
             .allow_any_origin();
 
+        // 服务启动地址
+        let service_url = format!("{}:{}", local_ip, port);
         App::new()
+            .app_data(web::Data::new(service_url))
             .app_data(web::Data::new(data.clone()))
             .service(index)
             .wrap(cors)
@@ -70,7 +90,7 @@ pub async fn run(data: Package) {
             .route("/ws", web::get().to(socket_index))
     })
     .bind(format!("0.0.0.0:{}", port))
-    .unwrap()
+    .unwrap_or_else(|_| panic!("Could not start server on port:{}", port))
     .run()
     .await;
 }
