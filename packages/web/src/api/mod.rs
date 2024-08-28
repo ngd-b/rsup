@@ -1,12 +1,8 @@
-use std::sync::Arc;
-
 use actix_web::http::Error;
 use actix_web::{web, HttpResponse, Responder};
 use pkg::package::package_json::{update_dependencies, UpdateParams};
-use pkg::Pkg;
-
+use pkg::package::Package;
 use serde_derive::{Deserialize, Serialize};
-use tokio::sync::Mutex;
 
 /// 定义接口参数结构体
 #[derive(Deserialize, Serialize)]
@@ -45,8 +41,8 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
 }
 
 /// 获取数据接口
-async fn get_data(data: web::Data<Arc<Mutex<Pkg>>>) -> impl Responder {
-    let data_clone = data.lock().await;
+async fn get_data(data: web::Data<Package>) -> impl Responder {
+    let data_clone = data.get_pkg().await;
 
     HttpResponse::Ok()
         .content_type("application/json")
@@ -60,19 +56,22 @@ async fn get_data(data: web::Data<Arc<Mutex<Pkg>>>) -> impl Responder {
 /// 前端项目安装指定的版本依赖
 async fn update_pkg(
     info: web::Json<ReqParams>,
-    data: web::Data<Arc<Mutex<Pkg>>>,
+    data: web::Data<Package>,
 ) -> Result<impl Responder, Error> {
     // 调用pkg更新依赖
     match &*info {
         ReqParams::UpdatePkg(params) => {
-            let data_clone = data.lock().await;
+            let data_clone = data.get_pkg().await;
 
             match update_dependencies(data_clone.path.clone(), params.clone()).await {
                 Ok(()) => {
                     let res = ResParams::ok();
 
-                    pkg::Pkg::update_pkg_info(data.get_ref().clone(), params.clone()).await;
+                    // 更新依赖包
+                    data.get_ref().clone().update_pkg(params.clone()).await;
 
+                    // 发送消息更新
+                    data.sender.lock().await.send(()).await.unwrap();
                     Ok(HttpResponse::Ok()
                         .content_type("application/json")
                         .body(serde_json::to_string(&res).unwrap()))

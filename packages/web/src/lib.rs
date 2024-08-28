@@ -1,5 +1,4 @@
 use local_ip_address::local_ip;
-use std::sync::Arc;
 
 use actix_cors::Cors;
 use actix_files::{Files, NamedFile};
@@ -9,8 +8,7 @@ use actix_web::{
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 
-use pkg::Pkg;
-use tokio::sync::{mpsc::Receiver, Mutex};
+use pkg::package::Package;
 mod socket;
 use socket::Ms;
 mod api;
@@ -30,61 +28,49 @@ async fn index() -> impl Responder {
 async fn socket_index(
     req: HttpRequest,
     stream: web::Payload,
-    ms: web::Data<Arc<Mutex<Ms>>>,
+    data: web::Data<Package>,
 ) -> Result<HttpResponse, Error> {
     let (res, session, msg_stream) = actix_ws::handle(&req, stream)?;
 
-    let ms = ms.get_ref().clone();
     let client_ip = req
         .connection_info()
         .realip_remote_addr()
         .unwrap()
         .to_string();
 
+    let data_clone = data.get_ref().clone();
     actix_web::rt::spawn(async move {
         println!("new connection client's ip : {} ", client_ip);
 
-        Ms::handle_message(ms, session, msg_stream).await;
+        Ms::handle_message(data_clone, session, msg_stream).await;
     });
     Ok(res)
 }
 
-pub async fn run(
-    data: Arc<Mutex<Pkg>>,
-    rx: Receiver<()>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let port = 8080;
-
-    let socket_ms = Ms {
-        data: data.clone(),
-        rx,
-    };
+pub async fn run(data: Package) {
+    let port = 8088;
 
     let local_ip = local_ip().expect("Could not get local IP address");
     println!("Server running at:");
     println!("  - http://127.0.0.1:{}", port);
     println!("  - http://{}:{}", local_ip, port);
 
-    let ms = web::Data::new(Arc::new(Mutex::new(socket_ms)));
-
-    HttpServer::new(move || {
+    let _ = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()
             .allow_any_method()
             .allow_any_origin();
 
         App::new()
-            .app_data(web::Data::new(Arc::clone(&data)))
+            .app_data(web::Data::new(data.clone()))
             .service(index)
             .wrap(cors)
             .service(web::scope("/api").configure(api::api_config))
             .service(Files::new("/static", static_file_path()).prefer_utf8(true))
-            .app_data(ms.clone())
             .route("/ws", web::get().to(socket_index))
     })
-    .bind(format!("0.0.0.0:{}", port))?
+    .bind(format!("0.0.0.0:{}", port))
+    .unwrap()
     .run()
-    .await?;
-
-    Ok(())
+    .await;
 }

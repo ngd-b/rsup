@@ -1,11 +1,14 @@
-use std::{collections::HashMap, error::Error, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 pub mod package_info;
 pub mod package_json;
 
 use package_info::PkgInfo;
 use serde_derive::{Deserialize, Serialize};
-use tokio::sync::{mpsc::Sender, Mutex};
+use tokio::sync::{
+    mpsc::{channel, Receiver, Sender},
+    Mutex,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pkg {
@@ -48,7 +51,7 @@ impl Pkg {
             &new_info.dist_tags.latest,
             new_info.versions,
         );
-
+        new_info.version = Some(pkg_info.version);
         new_info.versions = versions;
 
         {
@@ -87,19 +90,40 @@ impl Pkg {
 ///
 pub struct Package {
     pub pkg: Arc<Mutex<Pkg>>,
-    pub sender: Sender<()>,
+    pub sender: Arc<Mutex<Sender<()>>>,
+    pub receiver: Arc<Mutex<Receiver<()>>>,
 }
 
+impl Clone for Package {
+    fn clone(&self) -> Self {
+        Self {
+            pkg: self.pkg.clone(),
+            sender: self.sender.clone(),
+            receiver: self.receiver.clone(),
+        }
+    }
+}
 impl Package {
-    pub fn update_pkg(&self) -> Result<(), Box<dyn Error>> {
+    pub fn new() -> Self {
+        let (tx, rx) = channel(100);
+
+        Package {
+            pkg: Arc::new(Mutex::new(Pkg::new())),
+            sender: Arc::new(Mutex::new(tx)),
+            receiver: Arc::new(Mutex::new(rx)),
+        }
+    }
+    pub async fn update_pkg(self, pkg_info: package_json::UpdateParams) {
         // let mut pkg_lock = self.pkg.lock().unwrap();
 
         // *pkg_lock = pkg.clone();
 
         // self.sender.send(pkg)
+        // let pkg = self.pkg.lock().await;
 
-        Ok(())
+        Pkg::update_pkg_info(self.pkg.clone(), pkg_info).await;
     }
+    /// 获取pkg 数据
     pub async fn get_pkg(&self) -> Pkg {
         let data_lock = self.pkg.lock().await;
 

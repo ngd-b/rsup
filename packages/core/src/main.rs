@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
 use clap::Parser;
-use pkg::package::Pakcage;
-use tokio::sync::mpsc::channel;
-use tokio::sync::Mutex;
+use pkg::package::Package;
+
 use tokio::task;
 use web;
 #[derive(Parser, Debug)]
@@ -24,14 +21,11 @@ struct Cli {
 async fn main() {
     let args = Cli::parse();
 
-    let data: Arc<Mutex<pkg::Pkg>> = Arc::new(Mutex::new(pkg::Pkg::new()));
+    // let data: Arc<Mutex<pkg::Pkg>> = Arc::new(Mutex::new(pkg::Pkg::new()));
 
-    let (tx, rx) = channel(100);
+    // let (tx, rx) = channel(100);
 
-    let package = Arc::new(Mutex::new(Pakcage {
-        pkg: data,
-        sender: tx,
-    }));
+    let package = Package::new();
     // 默认启动pkg解析服务
 
     // let data_clone = data.clone();
@@ -44,5 +38,5 @@ async fn main() {
     // 开启线程，需要处理线程使用异步运行时
     // let _ = task::spawn_blocking(move || pkg::run(args.pkg_args, data_clone, tx_clone));
 
-    let _ = web::run(data.clone(), rx).await;
+    web::run(package.clone()).await;
 }
