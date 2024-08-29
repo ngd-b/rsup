@@ -3,6 +3,10 @@ name = "core"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "rsup"
+path = "src/main.rs"
+
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 pkg = { version = "0.1.0", path = "../pkg" }

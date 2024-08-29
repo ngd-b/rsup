@@ -51,7 +51,7 @@ pub async fn run(args: Args, package: Package) {
                 package.sender.lock().await.send(()).await.unwrap();
             }
 
-            let mut tasks = Vec::new();
+            // let mut tasks = Vec::new();
 
             let client = Client::new();
 
@@ -87,27 +87,27 @@ pub async fn run(args: Args, package: Package) {
                 };
             if let Some(dev_dep) = pkg.dev_dependencies {
                 for (name, version) in dev_dep.iter() {
-                    let task = create_task(
+                    let _task = create_task(
                         name.to_string(),
                         version.to_string(),
                         client.clone(),
                         package.clone(),
                         true,
                     );
-                    tasks.push(task);
+                    // tasks.push(task);
                 }
             }
             if let Some(dep) = pkg.dependencies {
                 // 提前展示依赖名称
                 for (name, version) in dep.iter() {
-                    let task = create_task(
+                    let _task = create_task(
                         name.to_string(),
                         version.to_string(),
                         client.clone(),
                         package.clone(),
                         false,
                     );
-                    tasks.push(task);
+                    // tasks.push(task);
                 }
             }
 

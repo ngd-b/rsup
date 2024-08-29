@@ -129,9 +129,7 @@ pub fn compare_version(
         .collect();
 
     vs.sort();
-    // vs.into_iter()
-    //     .filter_map(|v| all_v.get(&v.to_string()).cloned())
-    //     .collect()
+
     let mut res: HashMap<String, VersionInfo> = HashMap::new();
     for v in vs {
         if let Some(info) = all_v.get(&v.to_string()).cloned() {
