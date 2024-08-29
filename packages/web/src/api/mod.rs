@@ -36,17 +36,10 @@ impl ResParams {
 
 /// 定义数据接口
 pub fn api_config(cfg: &mut web::ServiceConfig) {
-    cfg.route("/getUrl", web::get().to(get_url))
-        .route("/getData", web::get().to(get_data))
+    cfg.route("/getData", web::get().to(get_data))
         .route("/updatePkg", web::post().to(update_pkg));
 }
 
-/// 获取服务地址
-async fn get_url(url: web::Data<String>) -> impl Responder {
-    let url = url.get_ref().clone();
-
-    HttpResponse::Ok().body(url)
-}
 /// 获取数据接口
 async fn get_data(data: web::Data<Package>) -> impl Responder {
     let data_clone = data.get_pkg().await;

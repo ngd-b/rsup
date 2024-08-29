@@ -78,10 +78,7 @@ pub async fn run(data: Package) {
             .allow_any_method()
             .allow_any_origin();
 
-        // 服务启动地址
-        let service_url = format!("{}:{}", local_ip, port);
         App::new()
-            .app_data(web::Data::new(service_url))
             .app_data(web::Data::new(data.clone()))
             .service(index)
             .wrap(cors)
