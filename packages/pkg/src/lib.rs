@@ -3,6 +3,7 @@
 //! it will read the package.json file and check if there are any outdated dependencies
 //!
 
+use std::fs;
 use std::path::Path;
 
 use clap::Parser;
@@ -20,6 +21,13 @@ pub struct Args {
     pub dir: String,
 }
 
+/// check if the file exist
+pub fn check_file_exist<P: AsRef<Path>>(path: P) -> bool {
+    match fs::metadata(path) {
+        Ok(_) => true,
+        Err(_) => false,
+    }
+}
 /// the fun used to run the program
 ///
 /// # example
@@ -36,6 +44,11 @@ pub async fn run(args: Args, package: Package) {
 
     let pkg_file_path = Path::new(&file_path);
 
+    if !check_file_exist(pkg_file_path) {
+        // 错误消息提示
+
+        panic!("The path '{}' does not exist.", &file_path)
+    }
     match read_pkg_json(&pkg_file_path) {
         Ok(pkg) => {
             {

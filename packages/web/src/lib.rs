@@ -14,6 +14,8 @@ use pkg::package::Package;
 mod socket;
 use socket::Ms;
 mod api;
+use webbrowser;
+
 /// 获取静态文件路径
 pub fn static_file_path() -> String {
     format!("{}/src/static", env!("CARGO_MANIFEST_DIR"))
@@ -23,7 +25,6 @@ pub fn static_file_path() -> String {
 async fn index() -> impl Responder {
     let file_path = format!("{}/index.html", static_file_path());
 
-    println!("service statick index html {}", file_path);
     NamedFile::open_async(file_path).await
 }
 
@@ -68,10 +69,14 @@ pub async fn run(data: Package) {
     let port = check_is_busy_port();
 
     let local_ip = local_ip().expect("Could not get local IP address");
-    println!("Server running at:");
-    println!("  - http://127.0.0.1:{}", port);
-    println!("  - http://{}:{}", local_ip, port);
 
+    // 启动浏览器
+    let service_url = format!("http://{}:{}", local_ip, port);
+    if webbrowser::open(&service_url).is_ok() {
+        println!("Server running at:");
+        println!("  - http://127.0.0.1:{}", port);
+        println!("  - http://{}:{}", local_ip, port);
+    };
     let _ = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()
