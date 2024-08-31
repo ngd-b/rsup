@@ -1,6 +1,8 @@
 #!/bin/bash
 
-VERSION="0.1.1"
+# VERSION="0.1.1"
+# fix the tag VERSION and fix downlaod url
+VERSION="latest"
 
 echo "Thank you install rsup command! the current version is $VERSION"
 # exit when error occurring
