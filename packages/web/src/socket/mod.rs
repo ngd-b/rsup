@@ -1,16 +1,16 @@
 use actix_ws::{Message, MessageStream, Session};
 use futures_util::StreamExt;
-use pkg::package::Package;
+use pkg::package::{Package, Pkg};
 use tokio::time::{timeout, Duration};
 
 pub struct Ms {}
 
 impl Ms {
-    pub async fn send_message(data: Package, mut session: Session) {
-        let locked_data = data.get_pkg().await;
+    pub async fn send_message(data: Pkg, mut session: Session) {
+        // let locked_data = data.get_pkg().await;
 
         // let json = json!(&locked_data.clone());
-        let json = serde_json::to_string(&locked_data.clone()).unwrap();
+        let json = serde_json::to_string(&data.clone()).unwrap();
 
         println!("Sending message length: {}", json.len());
         if let Err(e) = session.text(json).await {
@@ -25,11 +25,12 @@ impl Ms {
     /// - 处理channel通道消息
     pub async fn handle_message(ms: Package, mut session: Session, mut msg_stream: MessageStream) {
         // 向前端发送消息
-        let ms_clone = ms.clone();
+        // let ms_clone = ms.clone();
+        let data_clone = ms.get_pkg().await;
         let session_clone = session.clone();
 
         tokio::spawn(async move {
-            Ms::send_message(ms_clone, session_clone).await;
+            Ms::send_message(data_clone, session_clone).await;
         });
 
         loop {
@@ -59,13 +60,11 @@ impl Ms {
                         Ok(Some(_))=>{
                             drop(rx);
 
-                            let ms_lock = ms.clone();
-                            Ms::send_message(ms_lock,session.clone()).await;
+                            // let ms_lock = ms.clone();
+                            let data_clone = ms.get_pkg().await;
+                            Ms::send_message(data_clone,session.clone()).await;
                         }
-                        Ok(None)=>{
-                            break;
-                        }
-                        Err(_)=>{
+                        _=>{
                             continue;
                         }
                     }

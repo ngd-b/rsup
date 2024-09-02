@@ -64,12 +64,12 @@ async fn update_pkg(
             let data_clone = data.get_pkg().await;
 
             match update_dependencies(data_clone.path.clone(), params.clone()).await {
-                Ok(()) => {
+                Ok(_) => {
                     let res = ResParams::ok();
 
                     // 更新依赖包
-                    data.get_ref().clone().update_pkg(params.clone()).await;
-
+                    let data_clone = data.get_ref().clone();
+                    data_clone.update_pkg(params.clone()).await.unwrap();
                     // 发送消息更新
                     data.sender.lock().await.send(()).await.unwrap();
                     Ok(HttpResponse::Ok()

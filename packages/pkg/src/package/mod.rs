@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, error::Error, sync::Arc};
 
 pub mod package_info;
 pub mod package_json;
@@ -34,7 +34,10 @@ impl Pkg {
         }
     }
     /// 更新某个依赖的版本信息
-    pub async fn update_pkg_info(data: Arc<Mutex<Pkg>>, pkg_info: package_json::UpdateParams) {
+    pub async fn update_pkg_info(
+        data: Arc<Mutex<Pkg>>,
+        pkg_info: package_json::UpdateParams,
+    ) -> Result<(), Box<dyn Error>> {
         let mut locked_data = data.lock().await;
 
         let dep = if pkg_info.is_dev {
@@ -61,8 +64,9 @@ impl Pkg {
             } else {
                 locked_data.dependencies.insert(pkg_info.name, new_info);
             }
-        }
+        };
 
+        Ok(())
         // if let Err(e) = tx.send(()).await {
         //     eprintln!("Error sending update signal: {}", e);
         // };
@@ -105,7 +109,7 @@ impl Clone for Package {
 }
 impl Package {
     pub fn new() -> Self {
-        let (tx, rx) = channel(100);
+        let (tx, rx) = channel(1000);
 
         Package {
             pkg: Arc::new(Mutex::new(Pkg::new())),
@@ -113,17 +117,19 @@ impl Package {
             receiver: Arc::new(Mutex::new(rx)),
         }
     }
-    pub async fn update_pkg(self, pkg_info: package_json::UpdateParams) {
-        // let mut pkg_lock = self.pkg.lock().unwrap();
-
-        // *pkg_lock = pkg.clone();
-
-        // self.sender.send(pkg)
+    pub async fn update_pkg(
+        self,
+        pkg_info: package_json::UpdateParams,
+    ) -> Result<(), Box<dyn Error>> {
         // let pkg = self.pkg.lock().await;
-
-        Pkg::update_pkg_info(self.pkg.clone(), pkg_info).await;
+        match Pkg::update_pkg_info(self.pkg.clone(), pkg_info).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
     /// 获取pkg 数据
+    ///
+    /// 非共享，纯数据
     pub async fn get_pkg(&self) -> Pkg {
         let data_lock = self.pkg.lock().await;
 
