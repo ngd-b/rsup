@@ -6,7 +6,7 @@ use tokio::time::{timeout, Duration};
 pub struct Ms {}
 
 impl Ms {
-    pub async fn send_message(data: Pkg, mut session: Session) {
+    pub async fn send_message(data: Pkg, session: &mut Session) {
         // let locked_data = data.get_pkg().await;
 
         // let json = json!(&locked_data.clone());
@@ -27,16 +27,28 @@ impl Ms {
         // 向前端发送消息
         // let ms_clone = ms.clone();
         let data_clone = ms.get_pkg().await;
-        let session_clone = session.clone();
 
-        tokio::spawn(async move {
-            Ms::send_message(data_clone, session_clone).await;
-        });
+        Ms::send_message(data_clone, &mut session).await;
 
         loop {
+            // channel 通信消息
             let mut rx = ms.receiver.lock().await;
+
             tokio::select! {
+                result = timeout(Duration::from_millis(100),rx.recv())=>{
+                    match result{
+                        Ok(Some(_)) => {
+                            println!("rx recv msg");
+                            let data_clone = ms.get_pkg().await;
+                            Ms::send_message(data_clone, &mut session).await;
+                        }
+                        _ => {
+                            continue;
+                        }
+                    }
+                }
                 Some(Ok(msg)) = msg_stream.next() =>{
+
                     match msg {
                         Message::Close(reason) => {
                             // 关闭连接
@@ -53,23 +65,12 @@ impl Ms {
                         }
                         _ => break,
                     }
+
                 }
 
-                result = timeout(Duration::from_millis(100),rx.recv())=>{
-                    match result{
-                        Ok(Some(_))=>{
-                            drop(rx);
-
-                            // let ms_lock = ms.clone();
-                            let data_clone = ms.get_pkg().await;
-                            Ms::send_message(data_clone,session.clone()).await;
-                        }
-                        _=>{
-                            continue;
-                        }
-                    }
-                }
             }
         }
+
+        let _ = session.close(None).await;
     }
 }
