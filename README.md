@@ -18,7 +18,9 @@ rust 工具库用来升级前端项目。旧项目迁移新脚手架工具。
 
 1. 直接下载并安装
 
-[点击下载 https://gitee.com/hboot/rsup/releases/download/latest/rsup.tar.gz](https://gitee.com/hboot/rsup/releases/download/latest/rsup.tar.gz)
+[github 下载地址](https://github.com/ngd-b/rsup/releases/download/latest/rsup.tar.gz)
+
+[gitee 下载地址](https://gitee.com/hboot/rsup/releases/download/latest/rsup.tar.gz)
 
 解压文件,使用解压工具解压，或者使用命令行工具解压，得到一个可以执行文件。
 
@@ -39,6 +41,10 @@ $> sudo mv rsup /usr/local/bin/
 在终端执行命令
 
 ```sh
+# github
+$> curl -fsSL https://github.com/ngd-b/rsup/raw/main/install.sh | bash
+
+# gitee
 $> curl -fsSL https://gitee.com/hboot/rsup/raw/master/install.sh | bash
 ```
 

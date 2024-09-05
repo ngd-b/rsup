@@ -11,6 +11,9 @@ BINARY_PATH="target/release/rsup"
 if [ -f "$BINARY_PATH" ]; then
     echo "Binary build successful: $BINARY_PATH"
     
+    # 删除原来的压缩包
+    rm  rsup.tar.gz
+
     # 创建一个压缩包，将编译后的二进制文件打包到根目录下
     tar -czvf rsup.tar.gz -C target/release rsup
 
