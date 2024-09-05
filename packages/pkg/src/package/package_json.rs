@@ -80,6 +80,6 @@ pub async fn update_dependencies(
 
         // 将错误信息发送给前端
         let stderr_str = String::from_utf8_lossy(&output.stderr).into_owned();
-        Ok(Some(stderr_str))
+        Err(stderr_str.into())
     }
 }

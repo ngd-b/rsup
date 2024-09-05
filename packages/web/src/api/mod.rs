@@ -78,7 +78,7 @@ async fn update_pkg(
                         .body(serde_json::to_string(&res).unwrap()))
                 }
                 Err(e) => {
-                    eprintln!("update dep err:{}", e);
+                    eprintln!("update dep err:{:#?}", e.to_string());
 
                     let res = ResParams::err(e.to_string());
                     Ok(HttpResponse::Ok()
