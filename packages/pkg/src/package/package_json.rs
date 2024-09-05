@@ -1,6 +1,12 @@
 use serde_derive::{Deserialize, Serialize};
 
-use std::{collections::HashMap, fs::File, io::BufReader, path::Path, process::Command};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::BufReader,
+    path::Path,
+    process::{Command, Stdio},
+};
 
 /// define the attributes of package.json
 ///
@@ -40,7 +46,7 @@ pub fn read_pkg_json<P: AsRef<Path>>(
 pub async fn update_dependencies(
     file_path: String,
     params: UpdateParams,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
     println!(
         "will update dep info :{} in the path {}",
         &params.name, &file_path
@@ -54,19 +60,26 @@ pub async fn update_dependencies(
     let name = format!("{}@{}", params.name, params.version);
 
     // 构建 npm install 命令
-    let status = Command::new("npm")
+    let output = Command::new("npm")
         .arg("install")
         .arg(&name)
         .current_dir(&dir_path) // 设置执行命令的目录
-        .status()?; // 执行命令并等待结果
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        // .status()?; // 执行命令并等待结果
+        .output()?;
 
-    if status.success() {
+    if output.status.success() {
         println!("Successfully installed {}", &name);
 
         // 成功后需要更新全局的数据
-        Ok(())
+        Ok(None)
     } else {
         println!("Failed to install {}", &name);
-        Err(format!("Failed to install {}", &name).into())
+        // Err(format!("Failed to install {}", &name).into())
+
+        // 将错误信息发送给前端
+        let stderr_str = String::from_utf8_lossy(&output.stderr).into_owned();
+        Ok(Some(stderr_str))
     }
 }

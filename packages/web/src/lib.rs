@@ -12,8 +12,10 @@ use actix_web::{
 
 use pkg::package::Package;
 mod socket;
-use socket::Ms;
+use rand::{thread_rng, Rng};
+use socket::{ConnId, Ms};
 mod api;
+use tokio::try_join;
 use webbrowser;
 
 /// 获取静态文件路径
@@ -28,10 +30,11 @@ async fn index() -> impl Responder {
     NamedFile::open_async(file_path).await
 }
 
+/// websocket 处理函数
 async fn socket_index(
     req: HttpRequest,
     stream: web::Payload,
-    data: web::Data<Package>,
+    data: web::Data<Ms>,
 ) -> Result<HttpResponse, Error> {
     let (res, session, msg_stream) = actix_ws::handle(&req, stream)?;
 
@@ -41,11 +44,23 @@ async fn socket_index(
         .unwrap()
         .to_string();
 
-    let data_clone = data.get_ref().clone();
-    actix_web::rt::spawn(async move {
-        println!("new connection client's ip : {} ", client_ip);
+    // 保存链接实例
+    let id = thread_rng().gen::<ConnId>();
+    {
+        let mut data_clone = data.connectors.lock().await;
 
-        Ms::handle_message(data_clone, session, msg_stream).await;
+        data_clone.insert(id, session.clone());
+    }
+
+    let data_clone = (**data).clone();
+
+    actix_web::rt::spawn(async move {
+        println!(
+            "new connection client's ip : {}. the client_id is {} ",
+            client_ip, id
+        );
+
+        Ms::handle_message(data_clone.package, session, msg_stream).await;
     });
     Ok(res)
 }
@@ -77,22 +92,34 @@ pub async fn run(data: Package) {
         println!("  - http://127.0.0.1:{}", port);
         println!("  - http://{}:{}", local_ip, port);
     };
-    let _ = HttpServer::new(move || {
+
+    // 创建socket实例
+    let ms = Ms::new(data);
+    // 启动channel数据监听服务
+    let mut ms_clone = ms.clone();
+    tokio::task::spawn(async move {
+        ms_clone.handle_receiver_msg().await;
+    });
+
+    let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()
             .allow_any_method()
             .allow_any_origin();
 
         App::new()
-            .app_data(web::Data::new(data.clone()))
+            .app_data(web::Data::new(ms.clone()))
             .service(index)
             .wrap(cors)
             .service(web::scope("/api").configure(api::api_config))
             .service(Files::new("/static", static_file_path()).prefer_utf8(true))
             .route("/ws", web::get().to(socket_index))
     })
+    .workers(5)
     .bind(format!("0.0.0.0:{}", port))
     .unwrap_or_else(|_| panic!("Could not start server on port:{}", port))
-    .run()
-    .await;
+    .run();
+
+    // try_join!(receiver_server).unwrap();
+    try_join!(server).unwrap();
 }

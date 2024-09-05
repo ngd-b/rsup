@@ -1,8 +1,9 @@
 use actix_web::http::Error;
 use actix_web::{web, HttpResponse, Responder};
 use pkg::package::package_json::{update_dependencies, UpdateParams};
-use pkg::package::Package;
 use serde_derive::{Deserialize, Serialize};
+
+use crate::socket::Ms;
 
 /// 定义接口参数结构体
 #[derive(Deserialize, Serialize)]
@@ -41,8 +42,8 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
 }
 
 /// 获取数据接口
-async fn get_data(data: web::Data<Package>) -> impl Responder {
-    let data_clone = data.get_pkg().await;
+async fn get_data(data: web::Data<Ms>) -> impl Responder {
+    let data_clone = data.package.get_pkg().await;
 
     HttpResponse::Ok()
         .content_type("application/json")
@@ -56,12 +57,12 @@ async fn get_data(data: web::Data<Package>) -> impl Responder {
 /// 前端项目安装指定的版本依赖
 async fn update_pkg(
     info: web::Json<ReqParams>,
-    data: web::Data<Package>,
+    data: web::Data<Ms>,
 ) -> Result<impl Responder, Error> {
     // 调用pkg更新依赖
     match &*info {
         ReqParams::UpdatePkg(params) => {
-            let data_clone = data.get_pkg().await;
+            let data_clone = data.package.get_pkg().await;
 
             match update_dependencies(data_clone.path.clone(), params.clone()).await {
                 Ok(_) => {
@@ -69,9 +70,9 @@ async fn update_pkg(
 
                     // 更新依赖包
                     let data_clone = data.get_ref().clone();
-                    data_clone.update_pkg(params.clone()).await.unwrap();
+                    data_clone.package.update_pkg(params.clone()).await.unwrap();
                     // 发送消息更新
-                    data.sender.lock().await.send(()).await.unwrap();
+                    data.package.sender.lock().await.send(()).await.unwrap();
                     Ok(HttpResponse::Ok()
                         .content_type("application/json")
                         .body(serde_json::to_string(&res).unwrap()))
