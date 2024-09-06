@@ -12,6 +12,7 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgInfo {
     pub name: String,
+    pub readme: Option<String>,
     pub version: Option<String>,
     pub description: Option<String>,
     pub homepage: Option<String>,
@@ -28,6 +29,7 @@ impl Default for PkgInfo {
         Self {
             name: String::new(),
             version: None,
+            readme: None,
             description: None,
             homepage: None,
             keywords: None,
@@ -128,7 +130,11 @@ pub fn compare_version(
         .filter(|v| *v > c_v && *v <= l_v)
         .collect();
 
-    vs.sort();
+    // 不需要预发布版本
+    vs.retain(|v| v.pre.is_empty());
+    // vs.sort();
+    // 版本从高到低排序
+    // vs.sort_by(|a, b| a.cmp(b));
 
     let mut res: HashMap<String, VersionInfo> = HashMap::new();
     for v in vs {
