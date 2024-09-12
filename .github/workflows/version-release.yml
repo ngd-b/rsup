@@ -42,3 +42,5 @@ jobs:
           name: ${{github.ref_name}}
           make_latest: true
           files: rsup.tar.gz
+        # 增加超时时间
+        timeout-minutes: 5
