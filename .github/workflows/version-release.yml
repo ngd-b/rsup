@@ -35,8 +35,14 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: Ensure build.sh is executable
+        run: chmod +x build.sh
+
       - name: build release and create tar.gz for ${{matrix.os}}
-        run: ./build.sh ${{matrix.os}}
+        run: bash ./build.sh ${{matrix.os}}
+
+      - name: list files
+        run: ls -al
 
       - name: create github release
         id: new_release
