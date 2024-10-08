@@ -8,7 +8,12 @@ on:
 
 jobs:
   release-build:
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
     if: ${{github.event_name == 'push' && startsWith(github.ref, 'refs/tags') || github.event_name == 'workflow_dispatch'}}
     steps:
       - name: checkout git code
@@ -21,7 +26,6 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: install  rust
@@ -31,8 +35,8 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: build release and create tar.gz
-        run: ./build.sh
+      - name: build release and create tar.gz for ${{matrix.os}}
+        run: ./build.sh ${{matrix.os}}
 
       - name: create github release
         id: new_release
@@ -41,6 +45,8 @@ jobs:
           tag_name: latest
           name: ${{github.ref_name}}
           make_latest: true
-          files: rsup.tar.gz
+          files: |
+            rsup-${{ matrix.os }}.tar.gz
+            rsup-${{ matrix.os }}.zip
         # 增加超时时间
         timeout-minutes: 5
