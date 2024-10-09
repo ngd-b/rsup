@@ -1,7 +1,12 @@
 
 [workspace]
 resolver = "2"
-members = ["packages/core", "packages/pkg", "packages/web"]
+members = [
+    "packages/core",
+    "packages/installer",
+    "packages/pkg",
+    "packages/web",
+]
 
 [workspace.dependencies]
 clap = "4"

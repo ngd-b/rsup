@@ -27,6 +27,7 @@ pub fn static_file_path() -> String {
 async fn index() -> impl Responder {
     let file_path = format!("{}/index.html", static_file_path());
 
+    println!("the service static file path is : {}", file_path);
     NamedFile::open_async(file_path).await
 }
 
