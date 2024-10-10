@@ -93,16 +93,25 @@ fn prompt_origin() -> Origin {
 /// 解压文件到指定目录
 async fn download_file(client: &Client, url: String, output: String) -> Result<(), Box<dyn Error>> {
     // 下载地址
-    let res = client.get(url).send().await?.error_for_status()?;
+    let res = client.get(url).send().await?;
 
-    // 文件路径
-    let mut file = fs::File::create(output).await?;
+    if res.status().is_success() {
+        // 下载成功
+        // 保存文件到指定目录
+        // 文件路径
+        let mut file = fs::File::create(output).await?;
 
-    // 保存文件
-    let bytes = res.bytes().await?;
-    file.write_all(&bytes).await?;
-
-    Ok(())
+        // 保存文件
+        let bytes = res.bytes().await?;
+        file.write_all(&bytes).await?;
+        Ok(())
+    } else {
+        let error_message = format!("Request failed with status code: {}", res.status());
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            error_message,
+        )))
+    }
 }
 
 #[tokio::main]
@@ -141,17 +150,14 @@ async fn main() {
     let (rsup_res, web_res) = tokio::join!(rsup_task, web_task);
 
     if rsup_res.is_err() {
-        eprintln!("rsup下载失败 {},下载地址：{}", rsup_res.err().unwrap(), url);
+        eprintln!("rsup下载失败 {}", rsup_res.err().unwrap());
     } else {
         println!("rsup下载成功");
+        // 解压文件
     }
 
     if web_res.is_err() {
-        eprintln!(
-            "rsup-web下载失败：{},下载地址: {}",
-            web_res.err().unwrap(),
-            web_url
-        );
+        eprintln!("rsup-web下载失败：{}", web_res.err().unwrap(),);
     } else {
         println!("rsup-web下载成功");
     }
