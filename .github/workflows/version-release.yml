@@ -35,6 +35,12 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: Install zip on windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          echo "Installing zip"
+          choco install zip -y
+
       - name: Ensure build.sh is executable
         run: chmod +x build.sh
 
@@ -42,7 +48,12 @@ jobs:
         run: bash ./build.sh ${{matrix.os}}
 
       - name: list files
-        run: ls -al
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            Get-ChildItem -Recurse
+          else
+            ls -al
+          fi
 
       - name: create github release
         id: new_release

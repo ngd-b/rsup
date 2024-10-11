@@ -29,7 +29,7 @@ if [ -f "$BINARY_PATH" ]; then
         echo "Compressing binary for windows..."
         zip -r rsup-installer-$os.zip target/release/installer.exe
 
-        echo "Binary successfully compressed to rsup-installer-$os.tar.gz"
+        echo "Binary successfully compressed to rsup-installer-$os.zip"
     else 
         echo "Compressing binary for $os..."
         tar -czvf rsup-installer-$os.tar.gz -C target/release installer

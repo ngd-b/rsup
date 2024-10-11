@@ -1,4 +1,4 @@
-name: version release
+name: installer release
 
 on:
   push:
@@ -34,6 +34,7 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
+
       - name: Install zip on windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
@@ -47,7 +48,12 @@ jobs:
         run: bash ./build_installer.sh ${{matrix.os}}
 
       - name: list files
-        run: ls -al
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            Get-ChildItem -Recurse
+          else
+            ls -al
+          fi
 
       - name: create github release
         id: new_release

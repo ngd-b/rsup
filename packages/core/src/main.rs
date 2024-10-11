@@ -3,6 +3,8 @@ use pkg::package::Package;
 
 use tokio::task;
 use web;
+
+mod config;
 #[derive(Parser, Debug)]
 #[command(name = "rsup", author, version, about)]
 struct Cli {
