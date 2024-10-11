@@ -1,0 +1,63 @@
+name: version release
+
+on:
+  push:
+    branches: main
+    tags: "v*"
+  workflow_dispatch:
+
+jobs:
+  release-build:
+    # runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    if: ${{github.event_name == 'push' && startsWith(github.ref, 'refs/tags') || github.event_name == 'workflow_dispatch'}}
+    steps:
+      - name: checkout git code
+        uses: actions/checkout@v4
+
+      - name: cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: install  rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - name: Install zip on windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          echo "Installing zip"
+          choco install zip -y
+
+      - name: Ensure build_installer.sh is executable
+        run: chmod +x build_installer.sh
+
+      - name: build rsup installer release and compress for ${{matrix.os}}
+        run: bash ./build_installer.sh ${{matrix.os}}
+
+      - name: list files
+        run: ls -al
+
+      - name: create github release
+        id: new_release
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          tag_name: latest
+          name: ${{github.ref_name}}
+          make_latest: true
+          files: |
+            rsup-installer-${{ matrix.os }}.tar.gz
+            rsup-installer-${{ matrix.os }}.zip
+        # 增加超时时间
+        timeout-minutes: 5
