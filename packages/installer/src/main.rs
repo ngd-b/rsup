@@ -1,41 +1,24 @@
 use std::error::Error;
+use std::fs::File;
+use std::path::Path;
 
-use clap::{command, Parser, ValueEnum};
-use dialoguer::{theme::ColorfulTheme, Select};
+use clap::{command, Parser};
+use flate2::read::GzDecoder;
 use reqwest::Client;
+use tar::Archive;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
 use crate::config::Config;
+use crate::prompt::{prompt_add_to_env, prompt_origin, Origin};
 
 mod config;
+mod prompt;
 #[derive(Parser, Debug, Clone)]
 #[command(name = "rsup-installer", author = "hboot", version, about)]
 pub struct Cli {
     #[arg(short, long, help = "选择下载源地址")]
     pub origin: Option<Origin>,
-}
-#[derive(Parser, Debug, Clone, ValueEnum)]
-pub enum Origin {
-    Github,
-    Gitee,
-}
-impl Origin {
-    pub fn get_pkg_url(&self) -> String {
-        match self {
-            Origin::Github => String::from("https://github.com/ngd-b"),
-            Origin::Gitee => String::from("https://gitee.com/hboot"),
-        }
-    }
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Origin::Github => "github",
-            Origin::Gitee => "gitee",
-        }
-    }
-    pub fn choices() -> Vec<&'static str> {
-        vec![Origin::Github.as_str(), Origin::Gitee.as_str()]
-    }
 }
 
 // 固定版本信息，
@@ -72,26 +55,27 @@ fn get_pkg_url_by_os(origin: Origin) -> (String, String) {
     (url, web_url)
 }
 
-/// 提示用户选择下载源
-/// @return 下载源
-fn prompt_origin() -> Origin {
-    let select = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Please select download source...")
-        .default(0)
-        .items(Origin::choices().as_slice())
-        .interact()
-        .unwrap();
+/// 解压文件
+///
+/// @param url 下载地址
+/// @param target_dir 保存目录
+async fn decompress_file(url: &str, target_dir: &str) -> Result<(), Box<dyn Error>> {
+    let tar_gz = File::open(url)?;
 
-    match select {
-        0 => Origin::Github,
-        1 => Origin::Gitee,
-        _ => unreachable!(),
+    let decomppress = GzDecoder::new(tar_gz);
+    let mut archive = Archive::new(decomppress);
+
+    // 处理解压目录，不存在则创建目录
+    if !Path::new(target_dir).exists() {
+        fs::create_dir_all(target_dir).await?;
     }
-}
+    archive.unpack(target_dir)?;
 
+    Ok(())
+}
 /// 下载文件
 /// 解压文件到指定目录
-async fn download_file(client: &Client, url: String, output: String) -> Result<(), Box<dyn Error>> {
+async fn download_file(client: &Client, url: &str, output: &str) -> Result<(), Box<dyn Error>> {
     // 下载地址
     let res = client.get(url).send().await?;
 
@@ -133,19 +117,18 @@ async fn main() {
     // 获取下载地址
     let (url, web_url) = get_pkg_url_by_os(origin);
 
+    println!();
     println!("rsup下载地址：{}", url);
     println!("rsup-web下载地址：{}", web_url);
 
     // 创建客户端
     let client = Client::new();
     // 下载rsup
-    let rsup_task = download_file(&client, url.clone(), format!("{}/rsup.tar.gz", &config.dir));
+    let rsup_url = format!("{}/rsup.tar.gz", &config.dir);
+    let rsup_task = download_file(&client, &url, &rsup_url);
     // 下载rsup-web
-    let web_task = download_file(
-        &client,
-        web_url.clone(),
-        format!("{}/rsup-web.tar.gz", &config.dir),
-    );
+    let rsup_web_url = format!("{}/rsup-web.tar.gz", &config.dir);
+    let web_task = download_file(&client, &web_url, &rsup_web_url);
 
     let (rsup_res, web_res) = tokio::join!(rsup_task, web_task);
 
@@ -154,11 +137,41 @@ async fn main() {
     } else {
         println!("rsup下载成功");
         // 解压文件
+        match decompress_file(&rsup_url, &config.dir).await {
+            Ok(_) => {
+                println!("rsup解压成功,解压目录为：{}", &config.dir)
+            }
+            Err(e) => {
+                eprintln!("rsup解压失败：{}", e);
+            }
+        }
     }
 
     if web_res.is_err() {
         eprintln!("rsup-web下载失败：{}", web_res.err().unwrap(),);
     } else {
         println!("rsup-web下载成功");
+        // 解压文件
+        let target_dir = format!("{}/web", &config.dir);
+        match decompress_file(&rsup_web_url, &target_dir).await {
+            Ok(_) => {
+                println!("rsup-web解压成功,解压目录为：{}/web", &config.dir)
+            }
+            Err(e) => {
+                eprintln!("rsup-web解压失败：{}", e);
+            }
+        }
     }
+
+    println!();
+    println!("rsup 可执行文件目录为：{}", &config.dir);
+    let shell_path = format!("{}", &config.dir);
+    match prompt_add_to_env(&shell_path) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("{}", e);
+            println!("You can add command to environment variable by yourself.");
+        }
+    };
+    // 确认
 }
