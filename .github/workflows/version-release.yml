@@ -47,13 +47,13 @@ jobs:
       - name: build release and create tar.gz for ${{matrix.os}}
         run: bash ./build.sh ${{matrix.os}}
 
-      - name: list files
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            Get-ChildItem -Recurse
-          else
-            ls -al
-          fi
+      # - name: list files
+      #   run: |
+      #     if [[ "${{ matrix.os }}" = "windows-latest" ]]; then
+      #       pwsh -Command "Get-ChildItem -Recurse"
+      #     else
+      #       ls -al
+      #     fi
 
       - name: create github release
         id: new_release
