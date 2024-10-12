@@ -9,10 +9,9 @@ use tar::Archive;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
-use crate::config::Config;
 use crate::prompt::{prompt_add_to_env, prompt_origin, Origin};
+use config::Config;
 
-mod config;
 mod prompt;
 #[derive(Parser, Debug, Clone)]
 #[command(name = "rsup-installer", author = "hboot", version, about)]
@@ -109,8 +108,8 @@ async fn main() {
         None => prompt_origin(),
     };
 
-    // 配置文件
-    let config = Config::new().unwrap();
+    // 创建配置文件
+    let config = Config::write_config().await.unwrap();
 
     println!("rsup will be installed in: {}", &config.dir);
 

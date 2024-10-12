@@ -15,12 +15,16 @@ mod socket;
 use rand::{thread_rng, Rng};
 use socket::{ConnId, Ms};
 mod api;
+use config::Config;
 use tokio::try_join;
 use webbrowser;
 
 /// 获取静态文件路径
 pub fn static_file_path() -> String {
-    format!("{}/src/static", env!("CARGO_MANIFEST_DIR"))
+    // format!("{}/src/static", env!("CARGO_MANIFEST_DIR"))
+    let config = Config::get_config();
+
+    config.web.static_dir.clone()
 }
 
 #[get("/")]
@@ -68,7 +72,9 @@ async fn socket_index(
 
 /// 获取可用的端口号
 pub fn check_is_busy_port() -> u16 {
-    let mut port = 8888;
+    let config = Config::get_config();
+    // let mut port = 8888;
+    let mut port = config.web.port;
 
     for _ in 0..20 {
         if let Ok(_listener) = TcpListener::bind(("0.0.0.0", port)) {

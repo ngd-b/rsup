@@ -1,6 +1,7 @@
 use regex::Regex;
 use reqwest::Client;
 
+use config::Config;
 use semver::Version;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -88,7 +89,9 @@ pub async fn fetch_pkg_info(
     pkg_name: &str,
 ) -> Result<PkgInfo, Box<dyn std::error::Error>> {
     // let url = format!("https://registry.npmjs.org/{}", pkg_name);
-    let url = format!("https://registry.npmmirror.com/{}", pkg_name);
+    // let url = format!("https://registry.npmmirror.com/{}", pkg_name);
+    let config = Config::get_config();
+    let url = format!("{}/{}", config.pkg.npm_registry, pkg_name);
     println!("Fetching info for: {}", url);
 
     let res = client

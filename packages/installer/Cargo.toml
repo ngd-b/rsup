@@ -1,10 +1,11 @@
 [package]
 name = "installer"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
+config = { version = "0.1.0", path = "../config" }
 console = "0.15.8"
 dialoguer = "0.11.0"
 flate2 = "1.0.34"
