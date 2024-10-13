@@ -56,7 +56,7 @@ impl Default for Config {
 impl Config {
     /// 读取配置文件
     ///
-    pub async fn read_file() -> Result<(), Box<dyn Error>> {
+    pub async fn read_config() -> Result<(), Box<dyn Error>> {
         // 读取配置文件
         let config_dir = Config::get_url();
         let config_file_dir = format!("{}/config.toml", config_dir);

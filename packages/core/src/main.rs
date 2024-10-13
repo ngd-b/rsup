@@ -26,7 +26,7 @@ async fn main() {
     let args = Cli::parse();
 
     // 读取配置文件
-    match Config::read_file().await {
+    match Config::read_config().await {
         Ok(()) => {
             println!("读取配置文件成功!")
         }

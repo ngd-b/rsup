@@ -76,7 +76,7 @@ pub fn prompt_add_to_env(path: &str) -> Result<(), Box<dyn Error>> {
             "macos" => ".zshrc",
             _ => ".bashrc",
         };
-
+        // 环境变量配置目录
         let shell_config_path = format!("{}/{}", home_dir, shell_file_name);
 
         if !Path::new(&shell_config_path).exists() {
@@ -90,6 +90,8 @@ pub fn prompt_add_to_env(path: &str) -> Result<(), Box<dyn Error>> {
             )));
         }
         println!("The shell config path: {}", shell_config_path);
+
+        // 写入配置
         let mut file = OpenOptions::new().append(true).open(shell_config_path)?;
         writeln!(file, "\n# Add rsup to PATH\nexport PATH=\"{}:$PATH\"", path)?;
 
