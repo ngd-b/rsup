@@ -1,7 +1,7 @@
 
 [workspace]
 resolver = "2"
-members = [ "packages/config",
+members = [ "packages/command", "packages/config",
     "packages/core",
     "packages/installer",
     "packages/pkg",

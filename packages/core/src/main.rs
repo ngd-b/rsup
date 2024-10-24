@@ -3,6 +3,7 @@ use std::process::exit;
 use clap::Parser;
 use pkg::package::Package;
 
+use command::{run, Commands};
 use config::Config;
 use tokio::task;
 use web;
@@ -10,16 +11,11 @@ use web;
 #[derive(Parser, Debug)]
 #[command(name = "rsup", author, version, about)]
 struct Cli {
-    // #[command(subcommand)]
-    // command: Commands,
+    #[command(subcommand)]
+    command: Commands,
     #[clap(flatten)]
     pkg_args: pkg::Args,
 }
-
-// #[derive(Subcommand, Debug)]
-// enum Commands {
-//     Pkg(pkg::Args),
-// }
 
 #[tokio::main]
 async fn main() {
@@ -36,7 +32,10 @@ async fn main() {
             exit(1)
         }
     };
-
+    // 是否执行的自命令，则不需要启动pkg解析服务
+    // match args.command {
+    //     Commands::Config
+    // }
     let package = Package::new();
     // 默认启动pkg解析服务
 

@@ -123,4 +123,51 @@ impl Config {
             _ => "/opt/rsup".to_string(),
         }
     }
+    /// 获取配置信息
+    pub fn get(&self, key: &str) -> Option<String> {
+        let mut parts: Vec<&str> = key.split(".").collect();
+
+        // 取值
+        let key = parts.remove(0);
+
+        match key {
+            "name" => Some(self.name.clone()),
+            "version" => Some(self.version.clone()),
+            "dir" => Some(self.dir.clone()),
+            "web" => self.web.get(parts.clone()),
+            "pkg" => self.pkg.get(parts.clone()),
+            _ => None,
+        }
+    }
+}
+
+/// web 配置
+/// 获取配置信息
+impl WebConfig {
+    pub fn get(&self, mut parts: Vec<&str>) -> Option<String> {
+        if parts.is_empty() {
+            return None;
+        }
+        let key = parts.remove(0);
+
+        match key {
+            "port" => Some(self.port.clone().to_string()),
+            "static_dir" => Some(self.static_dir.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl PkgConfig {
+    pub fn get(&self, mut parts: Vec<&str>) -> Option<String> {
+        if parts.is_empty() {
+            return None;
+        }
+        let key = parts.remove(0);
+
+        match key {
+            "npm_registry" => Some(self.npm_registry.clone()),
+            _ => None,
+        }
+    }
 }

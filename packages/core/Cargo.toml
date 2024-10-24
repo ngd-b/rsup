@@ -9,6 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
+command = { version = "0.1.0", path = "../command" }
 config = { path = "../config" }
 pkg = { path = "../pkg" }
 tokio = { version = "1.39.2", features = ["full"] }
