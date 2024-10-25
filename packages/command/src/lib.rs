@@ -17,19 +17,19 @@ pub enum Commands {
     },
 }
 
-pub fn run() {
+pub async fn run() {
     let cli = Commands::parse();
 
-    match cli {
+    let _ = match cli {
         Commands::Config { config } => match config {
-            ConfigOptions::List => ConfigOptions::list_config(),
-            ConfigOptions::Set => todo!(),
-            ConfigOptions::Get { key } => ConfigOptions::get_config_value(&key),
+            ConfigOptions::List => ConfigOptions::list_config().await,
+            ConfigOptions::Set { key, value } => ConfigOptions::set_config_value(&key, value).await,
+            ConfigOptions::Get { key } => ConfigOptions::get_config_value(&key).await,
             ConfigOptions::Delete => todo!(),
         },
         Commands::Update { update } => match update {
             UpdateOptions::Rsup => todo!(),
             UpdateOptions::Web => todo!(),
         },
-    }
+    };
 }

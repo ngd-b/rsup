@@ -1,11 +1,12 @@
+use anyhow::{anyhow, Error};
 use std::{
-    error::Error,
     fs::{self, File},
     io::{self, Write},
     path::Path,
 };
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 /// 解析配置文件
 /// 操作配置文件
 /// 默认目录：
@@ -14,9 +15,14 @@ use once_cell::sync::OnceCell;
 use serde_derive::{Deserialize, Serialize};
 // 全局共享配置数据
 
-pub static CONFIG: OnceCell<Config> = OnceCell::new();
+pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
+    // 这里调用初始化
+    let config = Config::read_config().unwrap();
 
-#[derive(Debug, Serialize, Deserialize)]
+    RwLock::new(config)
+});
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub name: String,
     pub version: String,
@@ -26,12 +32,12 @@ pub struct Config {
     // 包管理配置
     pub pkg: PkgConfig,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WebConfig {
     pub port: u16,
     pub static_dir: String,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgConfig {
     pub npm_registry: String,
 }
@@ -56,7 +62,7 @@ impl Default for Config {
 impl Config {
     /// 读取配置文件
     ///
-    pub async fn read_config() -> Result<(), Box<dyn Error>> {
+    fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
         // 读取配置文件
         let config_dir = Config::get_url();
         let config_file_dir = format!("{}/config.toml", config_dir);
@@ -74,11 +80,11 @@ impl Config {
         let config: Config = toml::from_str(&config_content)?;
 
         // 保存配置数据共享
-        CONFIG.set(config).unwrap();
-        Ok(())
+        // CONFIG.set(config.clone()).unwrap();
+        Ok(config)
     }
     /// 写入配置文件
-    pub async fn write_config() -> Result<Config, Box<dyn Error>> {
+    pub fn write_config() -> Result<Config, Error> {
         let config_dir = Config::get_url();
 
         // 创建配置文件目录
@@ -113,8 +119,12 @@ impl Config {
     }
 
     /// 父级包获取配置
-    pub fn get_config() -> &'static Config {
-        CONFIG.get().unwrap()
+    pub async fn get_config() -> RwLockReadGuard<'static, Config> {
+        CONFIG.read().await
+    }
+    /// 可更新配置
+    pub async fn get_mut_config() -> RwLockWriteGuard<'static, Config> {
+        CONFIG.write().await
     }
     /// 根据不同系统生成不同的配置文件路径
     pub fn get_url() -> String {
@@ -139,6 +149,36 @@ impl Config {
             _ => None,
         }
     }
+    /// 设置配置信息
+    pub fn set(&mut self, key: &str, value: String) -> Result<(), Error> {
+        let mut parts: Vec<&str> = key.split(".").collect();
+
+        // 取值
+        let key = parts.remove(0);
+
+        let bool = match key {
+            "name" => {
+                self.name = value;
+                true
+            }
+            "version" => {
+                self.version = value;
+                true
+            }
+            "dir" => {
+                self.dir = value;
+                true
+            }
+            "web" => self.web.set(parts.clone(), value),
+            "pkg" => self.pkg.set(parts.clone(), value),
+            _ => false,
+        };
+        if bool {
+            Ok(())
+        } else {
+            Err(anyhow!("配置项不存在"))
+        }
+    }
 }
 
 /// web 配置
@@ -156,6 +196,19 @@ impl WebConfig {
             _ => None,
         }
     }
+    pub fn set(&mut self, mut parts: Vec<&str>, value: String) -> bool {
+        if parts.is_empty() {
+            return false;
+        }
+        let key = parts.remove(0);
+        match key {
+            "port" => self.port = value.parse().unwrap(),
+            "static_dir" => self.static_dir = value,
+
+            _ => return false,
+        };
+        true
+    }
 }
 
 impl PkgConfig {
@@ -169,5 +222,17 @@ impl PkgConfig {
             "npm_registry" => Some(self.npm_registry.clone()),
             _ => None,
         }
+    }
+    pub fn set(&mut self, mut parts: Vec<&str>, value: String) -> bool {
+        if parts.is_empty() {
+            return false;
+        }
+        let key = parts.remove(0);
+        match key {
+            "npm_registry" => self.npm_registry = value,
+
+            _ => return false,
+        };
+        true
     }
 }

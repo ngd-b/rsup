@@ -14,7 +14,9 @@ async fn main() {
     // let data_clone = data.clone();
     let package_clone = package.clone();
 
-    tokio::task::spawn(async move { run(args, package_clone).await });
+    tokio::task::spawn(async move {
+        run(args, package_clone).await;
+    });
 
     let mut rx = package.receiver.lock().await;
     loop {

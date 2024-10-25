@@ -109,7 +109,7 @@ async fn main() {
     };
 
     // 创建配置文件
-    let config = Config::write_config().await.unwrap();
+    let config = Config::write_config().unwrap();
 
     println!("rsup will be installed in: {}", &config.dir);
 

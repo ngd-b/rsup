@@ -19,17 +19,11 @@ use config::Config;
 use tokio::try_join;
 use webbrowser;
 
-/// 获取静态文件路径
-pub fn static_file_path() -> String {
-    // format!("{}/src/static", env!("CARGO_MANIFEST_DIR"))
-    let config = Config::get_config();
-
-    config.web.static_dir.clone()
-}
-
 #[get("/")]
 async fn index() -> impl Responder {
-    let file_path = format!("{}/index.html", static_file_path());
+    let config = Config::get_config().await;
+
+    let file_path = format!("{}/index.html", config.web.static_dir);
 
     println!("the service static file path is : {}", file_path);
     NamedFile::open_async(file_path).await
@@ -71,10 +65,9 @@ async fn socket_index(
 }
 
 /// 获取可用的端口号
-pub fn check_is_busy_port() -> u16 {
-    let config = Config::get_config();
+pub fn check_is_busy_port(port: u16) -> u16 {
     // let mut port = 8888;
-    let mut port = config.web.port;
+    let mut port = port;
 
     for _ in 0..20 {
         if let Ok(_listener) = TcpListener::bind(("0.0.0.0", port)) {
@@ -87,8 +80,9 @@ pub fn check_is_busy_port() -> u16 {
 }
 
 pub async fn run(data: Package) {
+    let config = Config::get_config().await;
     // let port = 8088;
-    let port = check_is_busy_port();
+    let port = check_is_busy_port(config.web.port);
 
     let local_ip = local_ip().expect("Could not get local IP address");
 
@@ -108,6 +102,7 @@ pub async fn run(data: Package) {
         ms_clone.handle_receiver_msg().await;
     });
 
+    let static_file_path = config.web.static_dir.clone();
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()
@@ -119,7 +114,7 @@ pub async fn run(data: Package) {
             .service(index)
             .wrap(cors)
             .service(web::scope("/api").configure(api::api_config))
-            .service(Files::new("/static", static_file_path()).prefer_utf8(true))
+            .service(Files::new("/static", static_file_path.clone()).prefer_utf8(true))
             .route("/ws", web::get().to(socket_index))
     })
     .workers(5)

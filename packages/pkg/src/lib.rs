@@ -12,6 +12,7 @@ use package::package_info::{compare_version, fetch_pkg_info};
 use package::package_json::read_pkg_json;
 use package::{Package, Pkg};
 pub mod package;
+use config::Config;
 use reqwest::Client;
 
 #[derive(Parser, Debug)]
@@ -49,6 +50,9 @@ pub async fn run(args: Args, package: Package) {
 
         panic!("The path '{}' does not exist.", &file_path)
     }
+    // 从配置信息中读取npm配置信息
+    let config = Config::get_config().await;
+    let regitry = config.pkg.npm_registry.clone();
     match read_pkg_json(&pkg_file_path) {
         Ok(pkg) => {
             {
@@ -68,36 +72,39 @@ pub async fn run(args: Args, package: Package) {
 
             let client = Client::new();
 
-            let create_task =
-                |name: String, version: String, client: Client, data: Package, is_dev| {
-                    tokio::spawn(async move {
-                        println!("Starting task for package: {}", name);
-                        let info = fetch_pkg_info(&client, &name).await.unwrap();
+            let create_task = |name: String,
+                               version: String,
+                               client: Client,
+                               data: Package,
+                               is_dev,
+                               regitry: String| {
+                tokio::spawn(async move {
+                    println!("Starting task for package: {}", name);
+                    let info = fetch_pkg_info(&client, &name, &regitry).await.unwrap();
 
-                        let mut new_info = info.clone();
-                        let versions =
-                            compare_version(&version, &info.dist_tags.latest, info.versions);
+                    let mut new_info = info.clone();
+                    let versions = compare_version(&version, &info.dist_tags.latest, info.versions);
 
-                        new_info.version = Some(version.clone());
-                        new_info.versions = versions;
-                        new_info.is_finish = true;
+                    new_info.version = Some(version.clone());
+                    new_info.versions = versions;
+                    new_info.is_finish = true;
 
-                        println!("finish fetch pkg info for:{}", name);
-                        {
-                            let mut res = data.pkg.lock().await;
-                            if is_dev {
-                                res.dev_dependencies.insert(name.clone(), new_info);
-                            } else {
-                                res.dependencies.insert(name.clone(), new_info);
-                            }
-                            if let Err(e) = data.sender.lock().await.send(()).await {
-                                eprintln!("Error sending update signal: {}", e);
-                            };
+                    println!("finish fetch pkg info for:{}", name);
+                    {
+                        let mut res = data.pkg.lock().await;
+                        if is_dev {
+                            res.dev_dependencies.insert(name.clone(), new_info);
+                        } else {
+                            res.dependencies.insert(name.clone(), new_info);
                         }
+                        if let Err(e) = data.sender.lock().await.send(()).await {
+                            eprintln!("Error sending update signal: {}", e);
+                        };
+                    }
 
-                        println!("Completed task for package: {}", name);
-                    });
-                };
+                    println!("Completed task for package: {}", name);
+                });
+            };
             if let Some(dev_dep) = pkg.dev_dependencies {
                 for (name, version) in dev_dep.iter() {
                     let _task = create_task(
@@ -106,6 +113,7 @@ pub async fn run(args: Args, package: Package) {
                         client.clone(),
                         package.clone(),
                         true,
+                        regitry.clone(),
                     );
                     // tasks.push(task);
                 }
@@ -119,6 +127,7 @@ pub async fn run(args: Args, package: Package) {
                         client.clone(),
                         package.clone(),
                         false,
+                        regitry.clone(),
                     );
                     // tasks.push(task);
                 }

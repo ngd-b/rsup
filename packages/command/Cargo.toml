@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 config = { version = "0.1.0", path = "../config" }
 serde = "1.0.210"
