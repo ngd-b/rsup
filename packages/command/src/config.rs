@@ -6,15 +6,13 @@ use toml;
 
 #[derive(Parser, Debug)]
 pub enum Options {
+    #[clap(name = "list", about = "List all config attributes")]
     List,
-    Set {
-        key: String,
-        value: String,
-    },
+    #[clap(name = "set", about = "Set config value")]
+    Set { key: String, value: String },
     #[clap(name = "get", about = "Get config value")]
-    Get {
-        key: String,
-    },
+    Get { key: String },
+    #[clap(name = "delete", about = "Delete config value")]
     Delete,
 }
 

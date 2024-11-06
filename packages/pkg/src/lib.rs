@@ -18,7 +18,12 @@ use reqwest::Client;
 #[derive(Parser, Debug)]
 #[command(author,version,about,long_about = None)]
 pub struct Args {
-    #[arg(short, long, default_value = ".")]
+    #[arg(
+        short,
+        long,
+        default_value = ".",
+        help = "The path to the package.json file"
+    )]
     pub dir: String,
 }
 

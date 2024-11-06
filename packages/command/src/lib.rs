@@ -7,10 +7,12 @@ mod config;
 mod update;
 #[derive(Parser, Debug)]
 pub enum Commands {
+    #[clap(name = "config", about = "Manage the config file")]
     Config {
         #[clap(subcommand)]
         config: ConfigOptions,
     },
+    #[clap(name = "update", about = "Update the rsup binary and web client")]
     Update {
         #[clap(subcommand)]
         update: UpdateOptions,
