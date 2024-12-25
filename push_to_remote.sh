@@ -29,6 +29,6 @@ git push -u $remote_gitee $branch
 
 # 推送到github
 echo "Push to github"
-git push -u $remote_github $branch:main
+git push -u $remote_github $branch:main --tags
 
 echo "Push to github and gitee successfully"
