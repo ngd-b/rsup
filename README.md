@@ -30,7 +30,7 @@ rust 工具库用来升级前端项目。旧项目迁移新脚手架工具。
 提供了安装脚本文件`sh`一键下载解压、安装。无需手动配置环境变量。
 
 ```sh
-$> curl -fsSL https://github.com/ngd-b/rsup/blob/main/install.sh | sh
+$> curl -fsSL https://raw.githubusercontent.com/ngd-b/rsup/main/install.sh | sh
 ```
 
 根据提示选择，安装完成即可。
