@@ -64,7 +64,7 @@ pub fn prompt_add_to_env(path: &str) -> Result<(), Box<dyn Error>> {
     let select = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt("Add command to environment variable?")
         .default(true)
-        .show_default(true)
+        .show_default(false)
         .interact()
         .unwrap();
 
@@ -91,16 +91,24 @@ pub fn prompt_add_to_env(path: &str) -> Result<(), Box<dyn Error>> {
         }
         println!("The shell config path: {}", shell_config_path);
 
-        // 写入配置
-        let mut file = OpenOptions::new().append(true).open(shell_config_path)?;
-        writeln!(file, "\n# Add rsup to PATH\nexport PATH=\"{}:$PATH\"", path)?;
+        // 判断是否已经添加过
+        let content = std::fs::read_to_string(&shell_config_path)?;
+        if content.contains(&path) {
+            println!("Already added to environment variable.");
+        } else {
+            // 写入配置
+            let mut file = OpenOptions::new().append(true).open(shell_config_path)?;
+            writeln!(file, "\n# Add rsup to PATH")?;
+            writeln!(file, "export PATH=\"{}:$PATH\"", path)?;
 
-        println!();
-        println!("💯 Add command to environment variable successfully.");
-        println!(
-            "😀 Please run `source ~/{}` to take effect.",
-            shell_file_name
-        );
+            println!();
+            println!("💯 Add command to environment variable successfully.");
+            println!(
+                "😀 Please run `source ~/{}` to take effect.",
+                shell_file_name
+            );
+        }
+
         Ok(())
     } else {
         return Err(Box::new(std::io::Error::new(

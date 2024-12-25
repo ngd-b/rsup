@@ -133,31 +133,40 @@ async fn main() {
 
     if rsup_res.is_err() {
         eprintln!("rsup下载失败 {}", rsup_res.err().unwrap());
+        // 退出
+        return;
     } else {
         println!("rsup下载成功");
         // 解压文件
         match decompress_file(&rsup_url, &config.dir).await {
             Ok(_) => {
-                println!("rsup解压成功,解压目录为：{}", &config.dir)
+                println!("rsup解压成功,解压目录为：{}", &config.dir);
+                // 解压完删除文件
+                fs::remove_file(&rsup_url).await.unwrap();
             }
             Err(e) => {
                 eprintln!("rsup解压失败：{}", e);
+                return;
             }
         }
     }
 
     if web_res.is_err() {
         eprintln!("rsup-web下载失败：{}", web_res.err().unwrap(),);
+        return;
     } else {
         println!("rsup-web下载成功");
         // 解压文件
         let target_dir = format!("{}/web", &config.dir);
         match decompress_file(&rsup_web_url, &target_dir).await {
             Ok(_) => {
-                println!("rsup-web解压成功,解压目录为：{}/web", &config.dir)
+                println!("rsup-web解压成功,解压目录为：{}/web", &config.dir);
+                // 解压完删除文件
+                fs::remove_file(&rsup_web_url).await.unwrap();
             }
             Err(e) => {
                 eprintln!("rsup-web解压失败：{}", e);
+                return;
             }
         }
     }
@@ -165,12 +174,13 @@ async fn main() {
     println!();
     println!("rsup 可执行文件目录为：{}", &config.dir);
     let shell_path = format!("{}", &config.dir);
+
     match prompt_add_to_env(&shell_path) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("{}", e);
             println!("You can add command to environment variable by yourself.");
         }
-    };
+    }
     // 确认
 }
