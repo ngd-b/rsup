@@ -9,7 +9,7 @@ use tar::Archive;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
-use crate::prompt::{prompt_add_to_env, prompt_origin, Origin};
+use crate::prompt::{prompt_add_to_env, Origin};
 use config::Config;
 
 mod prompt;
@@ -100,13 +100,17 @@ async fn download_file(client: &Client, url: &str, output: &str) -> Result<(), B
 #[tokio::main]
 async fn main() {
     // 解析命令行参数
-    let args = Cli::parse();
+    // let args = Cli::parse();
 
     // 根据系统获取rsup、rsup-web下载的地址
-    let origin = match args.origin {
-        Some(o) => o,
-        None => prompt_origin(),
-    };
+    // let origin = match args.origin {
+    //     Some(o) => o,
+    //     None => prompt_origin(),
+    // };
+
+    // 2024-12-25 暂时不使用交互式选择下载源，直接从github上下载资源
+    // 默认从github上下载资源
+    let origin = Origin::Github;
 
     // 创建配置文件
     let config = Config::write_config().unwrap();

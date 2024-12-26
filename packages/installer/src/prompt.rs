@@ -34,8 +34,9 @@ impl Origin {
 }
 
 /// 提示用户选择下载源
+/// 2024-12-24 废弃，直接从github下载，不再提示用户选择
 /// @return 下载源
-pub fn prompt_origin() -> Origin {
+pub fn _prompt_origin() -> Origin {
     let select = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Please select download source...")
         .default(0)

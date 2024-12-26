@@ -1,7 +1,10 @@
 use clap::Parser;
 
+// 引入外部crate
+extern crate config as external_config;
 use config::Options as ConfigOptions;
 use update::Options as UpdateOptions;
+use utils;
 
 mod config;
 mod update;
@@ -19,6 +22,7 @@ pub enum Commands {
     },
 }
 
+/// 命令行交互
 pub async fn run() {
     let cli = Commands::parse();
 
@@ -29,9 +33,18 @@ pub async fn run() {
             ConfigOptions::Get { key } => ConfigOptions::get_config_value(&key).await,
             ConfigOptions::Delete => todo!(),
         },
-        Commands::Update { update } => match update {
-            UpdateOptions::Rsup => todo!(),
-            UpdateOptions::Web => todo!(),
-        },
+        Commands::Update { update } => {
+            // 获取最新的包地址
+            let (rsup_url, rsup_web_url) = utils::get_pkg_url(None);
+
+            // 获取命令安装目录
+            let config = external_config::Config::get_config().await;
+            match update {
+                UpdateOptions::Rsup => UpdateOptions::rsup_update(rsup_url, &config.dir).await,
+                UpdateOptions::Web => {
+                    UpdateOptions::rsup_web_update(rsup_web_url, &config.dir).await
+                }
+            }
+        }
     };
 }
