@@ -30,7 +30,7 @@ rust 工具库用来升级前端项目。旧项目迁移新脚手架工具。
 提供了安装脚本文件`sh`一键下载解压、安装。无需手动配置环境变量。
 
 ```sh
-$> curl -fsSL https://raw.githubusercontent.com/ngd-b/rsup/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ngd-b/rsup/main/install.sh | sh
 ```
 
 根据提示选择，安装完成即可。
@@ -44,13 +44,13 @@ $> curl -fsSL https://raw.githubusercontent.com/ngd-b/rsup/main/install.sh | sh
 解压文件,使用解压工具解压，或者使用命令行工具解压，得到一个`installer`可以执行文件。
 
 ```sh
-$> tar -xzvf rsup-installer-macos-latest.tar.gz
+tar -xzvf rsup-installer-macos-latest.tar.gz
 ```
 
 在终端将执行执行文件`installer`。
 
 ```sh
-$> sudo ./installer
+sudo ./installer
 ```
 
 根据提示安装成功后，就可以在终端执行`rsup`命令。默认安装目录为`/opt/rsup`

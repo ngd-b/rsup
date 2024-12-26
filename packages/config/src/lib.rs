@@ -157,23 +157,29 @@ impl Config {
         let key = parts.remove(0);
 
         let bool = match key {
-            "name" => {
-                self.name = value;
-                true
-            }
-            "version" => {
-                self.version = value;
-                true
-            }
-            "dir" => {
-                self.dir = value;
-                true
-            }
+            // "name" => {
+            //     self.name = value;
+            //     true
+            // }
+            // "version" => {
+            //     self.version = value;
+            //     true
+            // }
+            // "dir" => {
+            //     self.dir = value;
+            //     true
+            // }
             "web" => self.web.set(parts.clone(), value),
             "pkg" => self.pkg.set(parts.clone(), value),
-            _ => false,
+            _ => return Err(anyhow!(format!("{} 配置项不可更改", key))),
         };
         if bool {
+            // 更新配置文件
+            let config_dir = Config::get_url();
+            let config_file_dir = format!("{}/config.toml", config_dir);
+            let config_content = toml::to_string(&self)?;
+            fs::write(config_file_dir, config_content)?;
+
             Ok(())
         } else {
             Err(anyhow!("配置项不存在"))
