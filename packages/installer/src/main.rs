@@ -1,16 +1,10 @@
-use std::error::Error;
-use std::fs::File;
-use std::path::Path;
-
 use clap::{command, Parser};
-use flate2::read::GzDecoder;
 use reqwest::Client;
-use tar::Archive;
 use tokio::fs;
-use tokio::io::AsyncWriteExt;
 
 use crate::prompt::{prompt_add_to_env, Origin};
 use config::Config;
+use utils;
 
 mod prompt;
 #[derive(Parser, Debug, Clone)]
@@ -18,83 +12,6 @@ mod prompt;
 pub struct Cli {
     #[arg(short, long, help = "选择下载源地址")]
     pub origin: Option<Origin>,
-}
-
-// 固定版本信息，
-const VERSION: &str = "latest";
-
-/// 根据系统获取rsup、rsup-web下载的地址
-/// @param os 操作系统
-/// @param origin 下载源
-fn get_pkg_url_by_os(origin: Origin) -> (String, String) {
-    let os = std::env::consts::OS;
-
-    // 下载地址
-    let mut url = format!(
-        "{}/rsup/releases/download/{}",
-        origin.get_pkg_url(),
-        VERSION
-    );
-    let mut web_url = format!(
-        "{}/rsup-web/releases/download/{}",
-        origin.get_pkg_url(),
-        VERSION
-    );
-
-    // 根据系统不同下载不同的包，
-    // 后缀名不一样
-    let file_suffix = match os {
-        "windows" => "windows-latest",
-        "macos" => "macos-latest",
-        _ => "ubuntu-latest",
-    };
-    url = format!("{}/rsup-{}.tar.gz", url, file_suffix);
-    web_url = format!("{}/rsup-web.tar.gz", web_url);
-
-    (url, web_url)
-}
-
-/// 解压文件
-///
-/// @param url 下载地址
-/// @param target_dir 保存目录
-async fn decompress_file(url: &str, target_dir: &str) -> Result<(), Box<dyn Error>> {
-    let tar_gz = File::open(url)?;
-
-    let decomppress = GzDecoder::new(tar_gz);
-    let mut archive = Archive::new(decomppress);
-
-    // 处理解压目录，不存在则创建目录
-    if !Path::new(target_dir).exists() {
-        fs::create_dir_all(target_dir).await?;
-    }
-    archive.unpack(target_dir)?;
-
-    Ok(())
-}
-/// 下载文件
-/// 解压文件到指定目录
-async fn download_file(client: &Client, url: &str, output: &str) -> Result<(), Box<dyn Error>> {
-    // 下载地址
-    let res = client.get(url).send().await?;
-
-    if res.status().is_success() {
-        // 下载成功
-        // 保存文件到指定目录
-        // 文件路径
-        let mut file = fs::File::create(output).await?;
-
-        // 保存文件
-        let bytes = res.bytes().await?;
-        file.write_all(&bytes).await?;
-        Ok(())
-    } else {
-        let error_message = format!("Request failed with status code: {}", res.status());
-        Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            error_message,
-        )))
-    }
 }
 
 #[tokio::main]
@@ -110,7 +27,7 @@ async fn main() {
 
     // 2024-12-25 暂时不使用交互式选择下载源，直接从github上下载资源
     // 默认从github上下载资源
-    let origin = Origin::Github;
+    // let origin = Origin::Github;
 
     // 创建配置文件
     let config = Config::write_config().unwrap();
@@ -118,7 +35,7 @@ async fn main() {
     println!("rsup will be installed in: {}", &config.dir);
 
     // 获取下载地址
-    let (url, web_url) = get_pkg_url_by_os(origin);
+    let (url, web_url) = utils::get_pkg_url(None);
 
     println!();
     println!("rsup下载地址：{}", url);
@@ -128,10 +45,10 @@ async fn main() {
     let client = Client::new();
     // 下载rsup
     let rsup_url = format!("{}/rsup.tar.gz", &config.dir);
-    let rsup_task = download_file(&client, &url, &rsup_url);
+    let rsup_task = utils::download_file(&client, &url, &rsup_url);
     // 下载rsup-web
     let rsup_web_url = format!("{}/rsup-web.tar.gz", &config.dir);
-    let web_task = download_file(&client, &web_url, &rsup_web_url);
+    let web_task = utils::download_file(&client, &web_url, &rsup_web_url);
 
     let (rsup_res, web_res) = tokio::join!(rsup_task, web_task);
 
@@ -142,7 +59,7 @@ async fn main() {
     } else {
         println!("rsup下载成功");
         // 解压文件
-        match decompress_file(&rsup_url, &config.dir).await {
+        match utils::decompress_file(&rsup_url, &config.dir).await {
             Ok(_) => {
                 println!("rsup解压成功,解压目录为：{}", &config.dir);
                 // 解压完删除文件
@@ -162,7 +79,7 @@ async fn main() {
         println!("rsup-web下载成功");
         // 解压文件
         let target_dir = format!("{}/web", &config.dir);
-        match decompress_file(&rsup_web_url, &target_dir).await {
+        match utils::decompress_file(&rsup_web_url, &target_dir).await {
             Ok(_) => {
                 println!("rsup-web解压成功,解压目录为：{}/web", &config.dir);
                 // 解压完删除文件

@@ -24,12 +24,26 @@ impl Options {
         println!("下载目录: {}", &rsup_url);
         println!("正在下载...");
         // 下载文件
-        utils::download_file(&client, &url, &rsup_url).await?;
-        println!("下载完成");
+        match utils::download_file(&client, &url, &rsup_url).await {
+            Ok(_) => {
+                println!("下载完成");
+            }
+            Err(e) => {
+                eprintln!("rsup下载失败 {}", e);
+                return Err(e);
+            }
+        }
         println!("正在解压...");
         // 解压文件
-        utils::decompress_file(&rsup_url, &dir).await?;
-        println!("解压完成");
+        match utils::decompress_file(&rsup_url, &dir).await {
+            Ok(_) => {
+                println!("解压完成");
+            }
+            Err(e) => {
+                eprintln!("rsup解压失败 {}", e);
+                return Err(e);
+            }
+        }
         println!("正在清理...");
 
         // 删除文件

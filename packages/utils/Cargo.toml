@@ -5,8 +5,10 @@ edition = "2021"
 
 [dependencies]
 flate2 = "1.0.35"
-reqwest = "0.12.9"
+futures-util = "0.3.31"
+indicatif = "0.17.9"
+reqwest = { version = "0.12.9", features = ["stream"] }
 serde = "1.0.216"
 serde_derive = "1.0.216"
 tar = "0.4.43"
-tokio = "1.42.0"
+tokio = { version = "1.42.0", features = ["full"] }
