@@ -2,6 +2,7 @@ use std::{collections::HashMap, error::Error, sync::Arc};
 
 pub mod package_info;
 pub mod package_json;
+pub mod package_lock;
 
 use package_info::PkgInfo;
 use serde_derive::{Deserialize, Serialize};
