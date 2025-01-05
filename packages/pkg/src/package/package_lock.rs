@@ -16,6 +16,9 @@ pub struct Pkg {
     pub dep_name: String,
     #[serde(default)]
     pub pkg_info: PkgInfo,
+    // 记录是否访问过，防止循环依赖
+    #[serde(default)]
+    pub visited: HashMap<String, PkgInfo>,
 }
 
 impl Default for Pkg {
@@ -26,6 +29,7 @@ impl Default for Pkg {
             packages: HashMap::new(),
             dep_name: Default::default(),
             pkg_info: PkgInfo::default(),
+            visited: HashMap::new(),
         }
     }
 }
@@ -59,9 +63,15 @@ pub struct PkgInfo {
     pub dependencies: HashMap<String, String>,
     #[serde(default)]
     pub is_peer: bool,
+    // 是否相互依赖
+    #[serde(default)]
+    pub is_loop: bool,
     // 依赖关系
     #[serde(default)]
     pub relations: Vec<PkgInfo>,
+    // 依赖路径
+    #[serde(default)]
+    pub path: String,
 }
 
 impl Default for PkgInfo {
@@ -77,7 +87,9 @@ impl Default for PkgInfo {
             peer_dependencies: HashMap::new(),
             dependencies: HashMap::new(),
             is_peer: false,
+            is_loop: false,
             relations: vec![],
+            path: String::new(),
         }
     }
 }
@@ -93,7 +105,7 @@ impl Pkg {
         pkg
     }
     // 读取的package.json文件
-    pub fn read_pkg(file_path: String) -> Result<Pkg, Box<dyn Error>> {
+    fn read_pkg(file_path: String) -> Result<Pkg, Box<dyn Error>> {
         // 项目所在目录
         let path = Path::new(&file_path);
 
@@ -123,6 +135,7 @@ impl Pkg {
         self.pkg_info = self.packages.get(&key).unwrap().clone();
         // 当前依赖名称设置为顶层路径的依赖名
         self.pkg_info.name = self.dep_name.clone();
+        self.pkg_info.path = key;
         // 开始递归查找依赖关系图
         self.pkg_info.relations = self
             .read_pkg_child_graph(self.pkg_info.clone(), prefix)
@@ -132,7 +145,7 @@ impl Pkg {
     }
 
     fn read_pkg_child_graph(
-        &self,
+        &mut self,
         parent: PkgInfo,
         prefix: Vec<String>,
     ) -> Result<Vec<PkgInfo>, Box<dyn Error>> {
@@ -143,7 +156,6 @@ impl Pkg {
             prefix.push(child_name.to_string());
             // 递归查找依赖关系图
             let mut child = self.read_pkg_graph_recursively(prefix)?;
-            child.name = child_name.clone();
             child.is_peer = false;
             relations.push(child);
         }
@@ -162,8 +174,8 @@ impl Pkg {
     /// 优先从父级路径查找依赖，处理存在冲突依赖的问题；
     /// 通常所有依赖都会被提升到顶级路径，有公用依赖就不需要重复安装
     ///
-    pub fn read_pkg_graph_recursively(
-        &self,
+    fn read_pkg_graph_recursively(
+        &mut self,
         prefix: Vec<String>,
     ) -> Result<PkgInfo, Box<dyn Error>> {
         println!(
@@ -173,36 +185,34 @@ impl Pkg {
         let mut graph = PkgInfo::default();
 
         let mut keys = prefix.clone();
+
         while keys.len() > 0 {
-            let key = format!("{}/{}", "node_modules", keys.join("/node_modules/"));
+            let key: String = format!("{}/{}", "node_modules", keys.join("/node_modules/"));
 
             println!("正在查找依赖,依赖路径：{}", key);
             if self.packages.contains_key(&key) {
-                println!("找到依赖：{}", key);
+                println!("找到依赖：{}", &key);
+
                 graph = self.packages.get(&key).unwrap().clone();
 
                 graph.name = keys.last().unwrap().to_string();
+                graph.path = key.clone();
+                // 判断是否存在循环依赖
+                if self.visited.contains_key(&key) {
+                    graph = self.visited.get(&key).unwrap().clone();
+                    graph.is_loop = true;
+
+                    break;
+                }
+                // 缓存已访问的依赖
+                self.visited.insert(key.clone(), graph.clone());
                 // 递归处理依赖关系图
-                for (child_name, _) in graph.dependencies.iter() {
-                    let mut prefix = prefix.clone();
-                    prefix.push(child_name.to_string());
+                graph.relations = self.read_pkg_child_graph(graph.clone(), prefix)?;
 
-                    let mut child = self.read_pkg_graph_recursively(prefix)?;
-                    child.is_peer = false;
-                    graph.relations.push(child);
-                }
-                for (child_name, _) in graph.peer_dependencies.iter() {
-                    let mut prefix = prefix.clone();
-                    prefix.push(child_name.to_string());
-
-                    let mut child = self.read_pkg_graph_recursively(prefix)?;
-                    child.is_peer = true;
-                    graph.relations.push(child);
-                }
                 break;
             }
             // 删除倒数第二个元素
-            if keys.len() < 1 {
+            if keys.len() <= 1 {
                 break;
             }
             keys.remove(keys.len() - 2);

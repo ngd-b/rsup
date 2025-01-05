@@ -54,7 +54,8 @@ async fn main() {
     // run_package(args).await;
 
     // 测试读取package-lock.json文件
-    match run_package_lock(args, "vue".to_string()) {
+    // match run_package_lock(args, "vue".to_string()) {
+    match run_package_lock(args, "unocss".to_string()) {
         Ok(pkg) => {
             println!("{:#?}", pkg)
         }
