@@ -5,7 +5,6 @@ use local_ip_address::local_ip;
 use actix_cors::Cors;
 use actix_files::{Files, NamedFile};
 use actix_web::{
-    get,
     web::{self},
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -19,7 +18,6 @@ use config::Config;
 use tokio::try_join;
 use webbrowser;
 
-#[get("/")]
 async fn index() -> impl Responder {
     let config = Config::get_config().await;
 
@@ -28,7 +26,6 @@ async fn index() -> impl Responder {
     println!("the service static file path is : {}", file_path);
     NamedFile::open_async(file_path).await
 }
-
 /// websocket 处理函数
 async fn socket_index(
     req: HttpRequest,
@@ -103,6 +100,8 @@ pub async fn run(data: Package) {
     });
 
     let static_file_path = config.web.static_dir.clone();
+
+    println!("web服务资源路径：{}", &static_file_path);
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()
@@ -111,11 +110,14 @@ pub async fn run(data: Package) {
 
         App::new()
             .app_data(web::Data::new(ms.clone()))
-            .service(index)
+            .route("/", web::get().to(index))
             .wrap(cors)
             .service(web::scope("/api").configure(api::api_config))
-            .service(Files::new("/static", static_file_path.clone()).prefer_utf8(true))
+            .service(
+                Files::new("/static", format!("{}/static/", &static_file_path)).prefer_utf8(true),
+            )
             .route("/ws", web::get().to(socket_index))
+            .route("/{tail:.*}", web::get().to(index))
     })
     .workers(5)
     .bind(format!("0.0.0.0:{}", port))

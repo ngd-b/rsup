@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, path::PathBuf};
 
 use clap::Parser;
 use reqwest::Client;
@@ -17,7 +17,8 @@ impl Options {
         let client = Client::new();
 
         // 下载目录
-        let rsup_url = format!("{}/rsup.tar.gz", dir);
+        let rsup_file = PathBuf::from(dir).join("rsup.tar.gz");
+        let rsup_url = rsup_file.to_string_lossy().to_string();
 
         println!("正在更新rsup命令包...");
         println!("下载地址: {}", &url);
@@ -47,7 +48,10 @@ impl Options {
         println!("正在清理...");
 
         // 删除文件
-        fs::remove_file(rsup_url).await?;
+        if let Err(e) = fs::remove_file(&rsup_url).await {
+            eprintln!("{}文件删除失败 {}", &rsup_url, e);
+            return Err(Box::new(e));
+        };
         println!("清理完成");
         println!("更新完成");
         println!("🥰 Enjoy!");
