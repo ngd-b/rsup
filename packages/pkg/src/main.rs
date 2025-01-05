@@ -39,7 +39,12 @@ fn run_package_lock(
     name: String,
 ) -> Result<package::package_lock::PkgInfo, Box<dyn Error>> {
     let file_path = file_exist(args.dir.to_string());
-    package::package_lock::Pkg::read_pkg_graph(name, file_path)
+    // package::package_lock::Pkg::read_pkg_graph(name, file_path)
+    let mut pkg = package::package_lock::Pkg::new(name, file_path);
+
+    pkg.read_pkg_graph().unwrap();
+
+    Ok(pkg.pkg_info)
 }
 #[tokio::main]
 async fn main() {

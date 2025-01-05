@@ -6,9 +6,28 @@ use std::{collections::HashMap, error::Error, fs::File, io::BufReader, path::Pat
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pkg {
+    #[serde(default)]
     pub name: String,
+    #[serde(default)]
     pub version: String,
+    #[serde(default)]
     pub packages: HashMap<String, PkgInfo>,
+    #[serde(default)]
+    pub dep_name: String,
+    #[serde(default)]
+    pub pkg_info: PkgInfo,
+}
+
+impl Default for Pkg {
+    fn default() -> Self {
+        Self {
+            name: Default::default(),
+            version: Default::default(),
+            packages: HashMap::new(),
+            dep_name: Default::default(),
+            pkg_info: PkgInfo::default(),
+        }
+    }
 }
 // 依赖关系结构体
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +83,15 @@ impl Default for PkgInfo {
 }
 
 impl Pkg {
+    pub fn new(dep_name: String, file_path: String) -> Pkg {
+        println!("开始从{}读取依赖关系...", file_path);
+
+        let mut pkg = Pkg::read_pkg(file_path).unwrap();
+        println!("读取{}依赖关系完成", &dep_name);
+        pkg.dep_name = dep_name;
+
+        pkg
+    }
     // 读取的package.json文件
     pub fn read_pkg(file_path: String) -> Result<Pkg, Box<dyn Error>> {
         // 项目所在目录
@@ -84,53 +112,58 @@ impl Pkg {
         Ok(package)
     }
     /// 读取某个依赖的依赖关系图
-    pub fn read_pkg_graph(dep_name: String, file_path: String) -> Result<PkgInfo, Box<dyn Error>> {
-        println!("开始从{}读取依赖关系图...", file_path);
-        let pkg = match Pkg::read_pkg(file_path) {
-            Ok(pkg) => pkg,
-            Err(e) => return Err(e),
-        };
-
-        println!("读取到package-lock.json文件...");
-        println!("{:#?}", pkg);
+    pub fn read_pkg_graph(&mut self) -> Result<(), Box<dyn Error>> {
         // 嵌套路径
-        let prefix = [dep_name.clone()].to_vec();
+        let prefix = [self.dep_name.clone()].to_vec();
         let key = format!("{}/{}", "node_modules", prefix.join("/node_modules/"));
-        if !pkg.packages.contains_key(&key) {
-            return Err(format!("当前路径未找到依赖：{}", dep_name).into());
+        if !self.packages.contains_key(&key) {
+            return Err(format!("当前路径未找到依赖：{}", self.dep_name).into());
         }
 
-        let mut graph = pkg.packages.get(&key).unwrap().clone();
-
-        graph.name = dep_name.clone();
+        self.pkg_info = self.packages.get(&key).unwrap().clone();
+        // 当前依赖名称设置为顶层路径的依赖名
+        self.pkg_info.name = self.dep_name.clone();
         // 开始递归查找依赖关系图
-        for (child_name, _) in graph.dependencies.iter() {
-            let mut prefix = prefix.clone();
-            prefix.push(child_name.to_string());
-            // 递归查找依赖关系图
-            let mut child = Pkg::read_pkg_graph_recursively(&pkg, prefix)?;
-            child.name = child_name.clone();
-            child.is_peer = false;
-            graph.relations.push(child);
-        }
-        for (child_name, _) in graph.peer_dependencies.iter() {
-            let mut prefix = prefix.clone();
-            prefix.push(child_name.to_string());
-            // 递归查找依赖关系图
-            let mut child = Pkg::read_pkg_graph_recursively(&pkg, prefix)?;
-            child.is_peer = true;
-            graph.relations.push(child);
-        }
+        self.pkg_info.relations = self
+            .read_pkg_child_graph(self.pkg_info.clone(), prefix)
+            .unwrap();
 
-        Ok(graph)
+        Ok(())
     }
 
+    fn read_pkg_child_graph(
+        &self,
+        parent: PkgInfo,
+        prefix: Vec<String>,
+    ) -> Result<Vec<PkgInfo>, Box<dyn Error>> {
+        let mut relations = Vec::new();
+
+        for (child_name, _) in parent.dependencies.iter() {
+            let mut prefix = prefix.clone();
+            prefix.push(child_name.to_string());
+            // 递归查找依赖关系图
+            let mut child = self.read_pkg_graph_recursively(prefix)?;
+            child.name = child_name.clone();
+            child.is_peer = false;
+            relations.push(child);
+        }
+        for (child_name, _) in parent.peer_dependencies.iter() {
+            let mut prefix = prefix.clone();
+            prefix.push(child_name.to_string());
+            // 递归查找依赖关系图
+            let mut child = self.read_pkg_graph_recursively(prefix)?;
+            child.is_peer = true;
+            relations.push(child);
+        }
+
+        Ok(relations)
+    }
     /// 递归读取指定依赖的依赖项
     /// 优先从父级路径查找依赖，处理存在冲突依赖的问题；
     /// 通常所有依赖都会被提升到顶级路径，有公用依赖就不需要重复安装
     ///
     pub fn read_pkg_graph_recursively(
-        pkg: &Pkg,
+        &self,
         prefix: Vec<String>,
     ) -> Result<PkgInfo, Box<dyn Error>> {
         println!(
@@ -138,17 +171,15 @@ impl Pkg {
             prefix.last().unwrap()
         );
         let mut graph = PkgInfo::default();
-        //
-        let mut index = prefix.len() - 2;
 
         let mut keys = prefix.clone();
         while keys.len() > 0 {
             let key = format!("{}/{}", "node_modules", keys.join("/node_modules/"));
 
             println!("正在查找依赖,依赖路径：{}", key);
-            if pkg.packages.contains_key(&key) {
+            if self.packages.contains_key(&key) {
                 println!("找到依赖：{}", key);
-                graph = pkg.packages.get(&key).unwrap().clone();
+                graph = self.packages.get(&key).unwrap().clone();
 
                 graph.name = keys.last().unwrap().to_string();
                 // 递归处理依赖关系图
@@ -156,7 +187,7 @@ impl Pkg {
                     let mut prefix = prefix.clone();
                     prefix.push(child_name.to_string());
 
-                    let mut child = Pkg::read_pkg_graph_recursively(pkg, prefix)?;
+                    let mut child = self.read_pkg_graph_recursively(prefix)?;
                     child.is_peer = false;
                     graph.relations.push(child);
                 }
@@ -164,7 +195,7 @@ impl Pkg {
                     let mut prefix = prefix.clone();
                     prefix.push(child_name.to_string());
 
-                    let mut child = Pkg::read_pkg_graph_recursively(pkg, prefix)?;
+                    let mut child = self.read_pkg_graph_recursively(prefix)?;
                     child.is_peer = true;
                     graph.relations.push(child);
                 }
