@@ -82,10 +82,12 @@ pub async fn decompress_file(url: &str, target_dir: &str) -> Result<(), Box<dyn 
     let decomppress = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(decomppress);
 
+    // 删除之前的文件
+    if Path::new(target_dir).exists() {
+        fs::remove_dir_all(target_dir).await?;
+    }
     // 处理解压目录，不存在则创建目录
-    if !Path::new(target_dir).exists() {
-        fs::create_dir_all(target_dir).await?;
-    };
+    fs::create_dir_all(target_dir).await?;
 
     archive.unpack(target_dir)?;
 
