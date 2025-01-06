@@ -1,4 +1,7 @@
-use std::{error::Error, path::PathBuf};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 use clap::Parser;
 use reqwest::Client;
@@ -81,8 +84,13 @@ impl Options {
         };
 
         println!("正在解压...");
+        // 删除旧文件
+        let target_dir = format!("{}/web", &dir);
+        if Path::new(&target_dir).exists() {
+            fs::remove_dir_all(&target_dir).await?;
+        }
         // 解压文件
-        match utils::decompress_file(&web_url, &format!("{}/web", &dir)).await {
+        match utils::decompress_file(&web_url, &target_dir).await {
             Ok(_) => {
                 println!("解压完成");
             }

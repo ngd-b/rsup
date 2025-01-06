@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use clap::{command, Parser};
 use reqwest::Client;
 use tokio::fs;
@@ -63,6 +65,7 @@ async fn main() {
             Ok(_) => {
                 println!("rsup解压成功,解压目录为：{}", &config.dir);
                 // 解压完删除文件
+                println!("删除rsup安装包:{}", &rsup_url);
                 fs::remove_file(&rsup_url).await.unwrap();
             }
             Err(e) => {
@@ -77,8 +80,14 @@ async fn main() {
         return;
     } else {
         println!("rsup-web下载成功");
+
         // 解压文件
         let target_dir = format!("{}/web", &config.dir);
+        // 删除目录文件
+        if Path::new(&target_dir).exists() {
+            fs::remove_file(&target_dir).await.unwrap();
+        }
+
         match utils::decompress_file(&rsup_web_url, &target_dir).await {
             Ok(_) => {
                 println!("rsup-web解压成功,解压目录为：{}/web", &config.dir);
