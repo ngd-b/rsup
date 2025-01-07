@@ -11,6 +11,9 @@ pub struct Pkg {
     #[serde(default)]
     pub version: String,
     #[serde(default)]
+    #[serde(rename = "lockfileVersion")]
+    pub lockfile_version: i32,
+    #[serde(default)]
     pub packages: HashMap<String, PkgInfo>,
     #[serde(default)]
     pub dep_name: String,
@@ -26,6 +29,7 @@ impl Default for Pkg {
         Self {
             name: Default::default(),
             version: Default::default(),
+            lockfile_version: Default::default(),
             packages: HashMap::new(),
             dep_name: Default::default(),
             pkg_info: PkgInfo::default(),
@@ -125,6 +129,10 @@ impl Pkg {
     }
     /// 读取某个依赖的依赖关系图
     pub fn read_pkg_graph(&mut self) -> Result<(), Box<dyn Error>> {
+        // 如果当前npm版本很低，则不支持查询
+        if self.lockfile_version < 2 {
+            return Err("当前npm版本不支持查询依赖关系图".into());
+        }
         // 嵌套路径
         let prefix = [self.dep_name.clone()].to_vec();
         let key = format!("{}/{}", "node_modules", prefix.join("/node_modules/"));
@@ -151,22 +159,23 @@ impl Pkg {
     ) -> Result<Vec<PkgInfo>, Box<dyn Error>> {
         let mut relations = Vec::new();
 
-        for (child_name, _) in parent.dependencies.iter() {
-            let mut prefix = prefix.clone();
-            prefix.push(child_name.to_string());
-            // 递归查找依赖关系图
-            let mut child = self.read_pkg_graph_recursively(prefix)?;
-            child.is_peer = false;
-            relations.push(child);
-        }
-        for (child_name, _) in parent.peer_dependencies.iter() {
-            let mut prefix = prefix.clone();
-            prefix.push(child_name.to_string());
-            // 递归查找依赖关系图
-            let mut child = self.read_pkg_graph_recursively(prefix)?;
-            child.is_peer = true;
-            relations.push(child);
-        }
+        let mut process_dependencies = |dependencies: &HashMap<String, String>, is_peer: bool| {
+            for (child_name, _) in dependencies.iter() {
+                let mut prefix = prefix.clone();
+                prefix.push(child_name.to_string());
+                // 递归查找依赖关系图
+                let mut child = self.read_pkg_graph_recursively(prefix).unwrap();
+                // 循环依赖
+                // if child.is_loop {
+                //     continue;
+                // }
+                child.is_peer = is_peer;
+                relations.push(child);
+            }
+        };
+
+        process_dependencies(&parent.dependencies, false);
+        process_dependencies(&parent.peer_dependencies, true);
 
         Ok(relations)
     }
@@ -180,34 +189,32 @@ impl Pkg {
     ) -> Result<PkgInfo, Box<dyn Error>> {
         println!(
             "开始递归读取依赖关系图,当前依赖：{:#?}",
-            prefix.last().unwrap()
+            &prefix.last().unwrap()
         );
         let mut graph = PkgInfo::default();
 
         let mut keys = prefix.clone();
-
         while keys.len() > 0 {
             let key: String = format!("{}/{}", "node_modules", keys.join("/node_modules/"));
 
             println!("正在查找依赖,依赖路径：{}", key);
             if self.packages.contains_key(&key) {
                 println!("找到依赖：{}", &key);
-
                 graph = self.packages.get(&key).unwrap().clone();
-
                 graph.name = keys.last().unwrap().to_string();
                 graph.path = key.clone();
                 // 判断是否存在循环依赖
                 if self.visited.contains_key(&key) {
                     graph = self.visited.get(&key).unwrap().clone();
                     graph.is_loop = true;
-
+                    // 记录循环依赖
+                    println!("存在循环依赖：{}", &key);
                     break;
                 }
                 // 缓存已访问的依赖
                 self.visited.insert(key.clone(), graph.clone());
                 // 递归处理依赖关系图
-                graph.relations = self.read_pkg_child_graph(graph.clone(), prefix)?;
+                graph.relations = self.read_pkg_child_graph(graph.clone(), prefix.clone())?;
 
                 break;
             }
@@ -216,6 +223,10 @@ impl Pkg {
                 break;
             }
             keys.remove(keys.len() - 2);
+        }
+        // 没有查到
+        if graph.name.is_empty() {
+            graph.name = prefix.last().unwrap().to_string();
         }
         Ok(graph)
     }

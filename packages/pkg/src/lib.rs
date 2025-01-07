@@ -44,8 +44,21 @@ pub fn check_file_exist<P: AsRef<Path>>(path: P) -> bool {
 /// ```
 pub async fn run(args: Args, package: Package) {
     let mut file_path = args.dir.clone();
-    if !args.dir.ends_with("package.json") {
+    // 判断是不是一个文件夹目录
+    let dir = Path::new(&args.dir);
+
+    if dir.is_dir() {
         file_path.push_str("/package.json");
+    } else {
+        // 是一个文件路径，但是不是package.json文件
+        if !args.dir.ends_with("package.json") {
+            let parent_dir = dir.parent().unwrap();
+            file_path = parent_dir
+                .join("package.json")
+                .to_str()
+                .unwrap()
+                .to_string();
+        }
     }
 
     let pkg_file_path = Path::new(&file_path);
