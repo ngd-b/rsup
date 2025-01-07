@@ -1,9 +1,9 @@
 name: installer release
 
 on:
-  push:
-    branches: main
-    tags: "v*"
+  # push:
+  #   branches: main
+  #   tags: "v*"
   workflow_dispatch:
 
 jobs:

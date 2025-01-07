@@ -59,8 +59,10 @@ pub async fn update_dependencies(
 
     let name = format!("{}@{}", params.name, params.version);
 
+    // 判断系统，如果是windows，则使用npm.cmd
+    let npm_cmd = if cfg!(windows) { "npm.cmd" } else { "npm" };
     // 构建 npm install 命令
-    let output = Command::new("npm")
+    let output = Command::new(npm_cmd)
         .arg("install")
         .arg(&name)
         .current_dir(&dir_path) // 设置执行命令的目录
@@ -75,11 +77,14 @@ pub async fn update_dependencies(
         // 成功后需要更新全局的数据
         Ok(None)
     } else {
-        println!("Failed to install {}", &name);
-        // Err(format!("Failed to install {}", &name).into())
-
         // 将错误信息发送给前端
         let stderr_str = String::from_utf8_lossy(&output.stderr).into_owned();
-        Err(stderr_str.into())
+        let stdout_str = String::from_utf8_lossy(&output.stdout).into_owned();
+
+        let error_message = format!("Failed to install {}", &name,);
+        println!("stderr_str: {}", stderr_str);
+        println!("stdout_str: {}", stdout_str);
+
+        Err(error_message.into())
     }
 }
