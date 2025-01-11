@@ -13,7 +13,7 @@ export default defineConfig({
     logo: "/logo.png",
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: "指南", link: "/guide" },
+      { text: "指南", link: "/guide/what-is-rsup" },
       { text: "API", link: "/api" },
       { text: "演示", link: "/example" },
       {
@@ -51,7 +51,11 @@ export default defineConfig({
             collapsed: false,
             base: "/guide/start/",
             items: [
-              { text: "rsup命令使用", link: "base" },
+              {
+                text: "rsup命令使用",
+                link: "base",
+                items: [{ text: "命令行功能", link: "command" }],
+              },
               { text: "web功能", link: "web" },
             ],
           },
@@ -60,13 +64,24 @@ export default defineConfig({
       "/api": {
         base: "/api/",
         items: [
-          { text: "core", link: "core" },
-          { text: "installer", link: "installer" },
-          { text: "config", link: "config" },
-          { text: "command", link: "command" },
-          { text: "pkg", link: "pkg" },
-          { text: "web", link: "web" },
-          { text: "utils", link: "utils" },
+          {
+            text: "rsup",
+            collapsed: false,
+            items: [
+              { text: "core", link: "core" },
+              { text: "installer", link: "installer" },
+              { text: "config", link: "config" },
+              { text: "command", link: "command" },
+              { text: "pkg", link: "pkg" },
+              { text: "web", link: "web" },
+              { text: "utils", link: "utils" },
+            ],
+          },
+          {
+            text: "web",
+            collapsed: false,
+            link: "",
+          },
         ],
       },
     },

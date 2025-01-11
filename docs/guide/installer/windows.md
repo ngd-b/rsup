@@ -58,4 +58,4 @@ npm_registry = "https://registry.npmmirror.com"
 rsup -V
 ```
 
-有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../start)
+有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../start/base)

@@ -8,7 +8,7 @@
 curl -fsSL https://raw.githubusercontent.com/ngd-b/rsup/main/install.sh | sh
 ```
 
-脚本安装不需要手动处理任何东西，等待安装完成后即可[开始使用](../start)
+脚本安装不需要手动处理任何东西，等待安装完成后即可[开始使用](../start/base)
 
 ## 手动安装 {#macos-manual}
 
@@ -40,7 +40,7 @@ sudo /Users/admin/Downloads/installer
 rsup -V
 ```
 
-有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../start)
+有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../star/base)
 
 ### 全手动安装 {#macos-manual-full}
 
@@ -108,4 +108,4 @@ source ~/.zshrc
 rsup -V
 ```
 
-有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../start)
+有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../start/base)
