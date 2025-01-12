@@ -37,7 +37,8 @@ async fn run_package(args: Args) {
 fn run_package_lock(args: Args, name: String) -> Result<manager::PkgInfo, Box<dyn Error>> {
     let file_path = file_exist(args.dir.to_string());
     // package::package_lock::Pkg::read_pkg_graph(name, file_path)
-    let mut pkg = manager::pkg_lock("npm", name, file_path);
+    // let mut pkg = manager::pkg_lock("npm", name, file_path);
+    let mut pkg = manager::pkg_lock("pnpm", name, file_path);
 
     let pkg_info = pkg.read_pkg_graph().unwrap();
 
