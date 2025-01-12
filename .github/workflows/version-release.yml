@@ -1,9 +1,8 @@
 name: version release
 
 on:
-  # push:
-  #   branches: main
-  #   tags: "v*"
+  push:
+    tags: "v*" # pushing a tag matching v*. e.g. v1.2.3
   workflow_dispatch:
 
 jobs:
@@ -12,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, windows-latest]
 
     if: ${{github.event_name == 'push' && startsWith(github.ref, 'refs/tags') || github.event_name == 'workflow_dispatch'}}
     steps:
@@ -54,6 +53,11 @@ jobs:
       #     else
       #       ls -al
       #     fi
+      - name: Generate changelog
+        run: |
+          echo "Generating changelog"
+          gem install github_changelog_generator
+          github_changelog_generator --user uioob --project https://github.com/ngd-b/rsup --release-notes --tag ${GITHUB_REF##*/}
 
       - name: create github release
         id: new_release
@@ -65,5 +69,6 @@ jobs:
           files: |
             rsup-${{ matrix.os }}.tar.gz
             rsup-${{ matrix.os }}.zip
+            CHANGELOG.md  # 上传生成的 changelog 文件
         # 增加超时时间
         timeout-minutes: 5
