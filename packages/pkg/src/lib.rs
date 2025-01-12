@@ -11,6 +11,7 @@ use clap::Parser;
 use package::package_info::{compare_version, fetch_pkg_info};
 use package::package_json::read_pkg_json;
 use package::{Package, Pkg};
+pub mod manager;
 pub mod package;
 use config::Config;
 use reqwest::Client;
@@ -82,6 +83,10 @@ pub async fn run(args: Args, package: Package) {
                 res.description = pkg.description;
                 res.dependencies = Pkg::generate_pkg_info(pkg.dependencies.clone());
                 res.dev_dependencies = Pkg::generate_pkg_info(pkg.dev_dependencies.clone());
+                // 确定当前项目的包管理工具
+                res.manager_name = Some(manager::get_current_manager(
+                    pkg_file_path.parent().unwrap(),
+                ));
                 // 数据更新就通知
                 package.sender.lock().await.send(()).await.unwrap();
             }

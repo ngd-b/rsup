@@ -46,10 +46,11 @@ pub fn read_pkg_json<P: AsRef<Path>>(
 pub async fn update_dependencies(
     file_path: String,
     params: UpdateParams,
+    manager_name: String,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
     println!(
-        "will update dep info :{} in the path {}",
-        &params.name, &file_path
+        "will update dep info :{} {} in the path {}",
+        &manager_name, &params.name, &file_path
     );
 
     // 项目所在目录
@@ -60,7 +61,11 @@ pub async fn update_dependencies(
     let name = format!("{}@{}", params.name, params.version);
 
     // 判断系统，如果是windows，则使用npm.cmd
-    let npm_cmd = if cfg!(windows) { "npm.cmd" } else { "npm" };
+    let npm_cmd = if cfg!(windows) {
+        format!("{}.cmd", manager_name)
+    } else {
+        manager_name
+    };
     // 构建 npm install 命令
     let output = Command::new(npm_cmd)
         .arg("install")
