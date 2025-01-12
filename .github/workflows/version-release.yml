@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "Generating changelog"
           gem install github_changelog_generator
-          github_changelog_generator -u hboot -p https://github.com/ngd-b/rsup
+          github_changelog_generator -u ngd-b -p rsup
 
       - name: create github release
         id: new_release
