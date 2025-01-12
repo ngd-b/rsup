@@ -40,7 +40,7 @@ sudo /Users/admin/Downloads/installer
 rsup -V
 ```
 
-有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../star/base)
+有版本信息的打印输出，说明我们的`rsup`工具就安装好了 [开始使用](../start/base)
 
 ### 全手动安装 {#macos-manual-full}
 
