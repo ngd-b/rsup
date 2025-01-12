@@ -107,7 +107,7 @@ export default defineConfig({
       next: "下一页",
     },
   },
-  base: "/rsup/",
+  // base: "/rsup/",
   cleanUrls: true,
   srcExclude: ["**/node_modules/**", "**/README.md", "**/TODO.md"],
 });
