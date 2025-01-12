@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     if: ${{github.event_name == 'push' && startsWith(github.ref, 'refs/tags') || github.event_name == 'workflow_dispatch'}}
     steps:
@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "Generating changelog"
           gem install github_changelog_generator
-          github_changelog_generator --user uioob --project https://github.com/ngd-b/rsup --release-notes --tag ${GITHUB_REF##*/}
+          github_changelog_generator -u hboot -p https://github.com/ngd-b/rsup
 
       - name: create github release
         id: new_release
