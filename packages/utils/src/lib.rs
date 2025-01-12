@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, path::Path};
+use std::{error::Error, fs::File, path::Path, process::Command};
 
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -152,4 +152,43 @@ pub async fn download_file(client: &Client, url: &str, output: &str) -> Result<(
             error_message,
         )))
     }
+}
+
+/**
+ * 获取系统命令信息
+ * 包括名称、版本号、路径等
+ */
+pub fn get_command_info(command_name: &str) -> Option<(Option<String>, Option<String>)> {
+    let which_cmd = if cfg!(windows) { "where" } else { "which" };
+    // 路径
+    let path = Command::new(which_cmd)
+        .arg(command_name)
+        .output()
+        .ok()
+        .and_then(|output| {
+            if output.status.success() {
+                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            } else {
+                None
+            }
+        });
+
+    let command_sys_cmd = if cfg!(windows) {
+        format!("{}.cmd", command_name)
+    } else {
+        command_name.to_string()
+    };
+    let version = Command::new(command_sys_cmd)
+        .arg("-v")
+        .output()
+        .ok()
+        .and_then(|output| {
+            if output.status.success() {
+                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            } else {
+                None
+            }
+        });
+
+    Some((path, version))
 }
