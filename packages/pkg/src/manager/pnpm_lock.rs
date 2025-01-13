@@ -30,6 +30,14 @@ pub struct PkgDependence {
     specifier: String,
     version: String,
 }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PkgImporter {
+    #[serde(default)]
+    pub dependencies: HashMap<String, PkgDependence>,
+    #[serde(default)]
+    #[serde(rename = "devDependencies")]
+    pub dev_dependencies: HashMap<String, PkgDependence>,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pkg {
@@ -44,11 +52,19 @@ pub struct Pkg {
     pub settings: PkgSetting,
     #[serde(default)]
     pub packages: HashMap<String, PkgInfo>,
+    // pnpm 8
     #[serde(default)]
     pub dependencies: HashMap<String, PkgDependence>,
+    // pnpm 8
     #[serde(default)]
     #[serde(rename = "devDependencies")]
     pub dev_dependencies: HashMap<String, PkgDependence>,
+    // pnpm 9
+    #[serde(default)]
+    pub importers: HashMap<String, PkgImporter>,
+    // pnpm9
+    #[serde(default)]
+    pub snapshots: HashMap<String, PkgInfo>,
     #[serde(default)]
     pub dep_name: String,
     #[serde(default)]
@@ -64,7 +80,9 @@ impl Default for Pkg {
             settings: Default::default(),
             dependencies: HashMap::new(),
             dev_dependencies: HashMap::new(),
+            importers: HashMap::new(),
             packages: HashMap::new(),
+            snapshots: HashMap::new(),
             dep_name: Default::default(),
             pkg_info: PkgInfo::default(),
         }
@@ -74,34 +92,59 @@ impl Default for Pkg {
 impl PkgLock for Pkg {
     fn new(dep_name: String, file_path: String) -> Pkg {
         println!("开始从{}读取依赖关系...", file_path);
-
+        // 根据版本应用不同的实例
         let mut pkg = Pkg::read_pkg(file_path).unwrap();
         println!("读取{}依赖关系完成", &dep_name);
         pkg.dep_name = dep_name;
-
+        println!("读取的文件数据{:#?}", &pkg);
         pkg
     }
 
     /// 读取某个依赖的依赖关系图
     fn read_pkg_graph(&mut self) -> Result<PkgInfo, Box<dyn Error>> {
         // 如果当前npm版本很低，则不支持查询
-        // if self.lockfile_version < 2 {
-        //     return Err("当前pnpm版本不支持查询依赖关系图".into());
-        // }
-
-        let dependence = if self.dependencies.contains_key(&self.dep_name) {
-            self.dependencies.get(&self.dep_name).unwrap()
-        } else {
-            self.dev_dependencies.get(&self.dep_name).unwrap()
-        };
-        let key = format!("/{}@{}", self.dep_name, dependence.version);
-        if !self.packages.contains_key(&key) {
-            return Err(format!("当前路径未找到依赖：{}", self.dep_name).into());
+        if self.lockfile_version != "6.0" && self.lockfile_version != "9.0" {
+            return Err("当前pnpm版本不支持查询依赖关系图".into());
         }
+        println!("当前pnpm-lock.json文件版本为{}", self.lockfile_version);
+        let find_dependence = |(dependencies, dev_dependencies): (
+            &HashMap<String, PkgDependence>,
+            &HashMap<String, PkgDependence>,
+        )|
+         -> PkgDependence {
+            if dependencies.contains_key(&self.dep_name) {
+                dependencies.get(&self.dep_name).unwrap().clone()
+            } else {
+                dev_dependencies.get(&self.dep_name).unwrap().clone()
+            }
+        };
+
+        let dependence = if self.lockfile_version == "6.0" {
+            find_dependence((&self.dependencies, &self.dev_dependencies))
+        } else {
+            // 9.0
+            let importer = if self.importers.contains_key(".") {
+                self.importers.get(".").unwrap()
+            } else {
+                self.importers.get("").unwrap()
+            };
+            find_dependence((&importer.dependencies, &importer.dev_dependencies))
+        };
+        let key = self.get_package_key(&self.dep_name, &dependence.version);
+
+        // if !self.packages.contains_key(&key) {
+        //     return Err(format!("当前路径未找到依赖：{}", self.dep_name).into());
+        // }
         // 记录依赖已被访问
         // self.visited.insert(key.clone(), self.pkg_info.clone());
 
-        self.pkg_info = self.packages.get(&key).unwrap().clone();
+        self.pkg_info = match self.get_package_info(&key) {
+            Some(info) => info,
+            None => {
+                return Err(format!("当前路径未找到依赖：{}", self.dep_name).into());
+            }
+        };
+
         // 当前依赖名称设置为顶层路径的依赖名
         self.pkg_info.name = self.dep_name.clone();
         self.pkg_info.path = key.clone();
@@ -118,6 +161,20 @@ impl PkgLock for Pkg {
 }
 
 impl Pkg {
+    fn get_package_key(&self, name: &str, version: &str) -> String {
+        match self.lockfile_version.as_str() {
+            "6.0" => format!("/{}@{}", name, version),
+            "9.0" => format!("{}@{}", name, version),
+            _ => format!("/{}@{}", name, version),
+        }
+    }
+    fn get_package_info(&self, key: &str) -> Option<PkgInfo> {
+        match self.lockfile_version.as_str() {
+            "6.0" => self.packages.get(key).cloned(),
+            "9.0" => self.snapshots.get(key).cloned(),
+            _ => None,
+        }
+    }
     // 读取的package.json文件
     fn read_pkg(file_path: String) -> Result<Pkg, Box<dyn Error>> {
         // 项目所在目录
@@ -176,27 +233,30 @@ impl Pkg {
         version: String,
         visited: Vec<String>,
     ) -> Result<PkgInfo, Box<dyn Error>> {
-        let key = format!("/{}@{}", &name, &version);
+        let key = self.get_package_key(&name, &version);
         println!("开始递归读取依赖关系图,当前依赖：{:#?}", &key);
-        let mut graph = PkgInfo::default();
+        // let mut graph = PkgInfo::default();
 
-        if self.packages.contains_key(&key) {
-            println!("找到依赖：{}", &key);
-            graph = self.packages.get(&key).unwrap().clone();
-            graph.name = name.clone();
-            graph.version = version.clone();
-            graph.path = key.clone();
-
-            if visited.contains(&key) {
-                graph.is_loop = true;
-                println!("存在循环依赖：{}", &key);
-                return Ok(graph);
+        let mut graph = match self.get_package_info(&key) {
+            Some(info) => {
+                println!("找到依赖：{}", &key);
+                info
             }
-            let mut visited = visited.clone();
-            visited.push(key.clone());
-            // 递归处理依赖关系图
-            graph.relations = self.read_pkg_child_graph(graph.clone(), visited)?;
+            None => PkgInfo::default(),
+        };
+        graph.name = name.clone();
+        graph.version = version.clone();
+        graph.path = key.clone();
+
+        if visited.contains(&key) {
+            graph.is_loop = true;
+            println!("存在循环依赖：{}", &key);
+            return Ok(graph);
         }
+        let mut visited = visited.clone();
+        visited.push(key.clone());
+        // 递归处理依赖关系图
+        graph.relations = self.read_pkg_child_graph(graph.clone(), visited)?;
 
         if graph.name.is_empty() {
             graph.name = name;
