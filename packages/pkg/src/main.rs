@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use clap::Parser;
-use pkg::{package, run, Args};
+use pkg::{manager, package, run, Args};
 use tokio::{self};
 
 // 文件路径
@@ -34,17 +34,15 @@ async fn run_package(args: Args) {
     }
 }
 
-fn run_package_lock(
-    args: Args,
-    name: String,
-) -> Result<package::package_lock::PkgInfo, Box<dyn Error>> {
+fn run_package_lock(args: Args, name: String) -> Result<manager::PkgInfo, Box<dyn Error>> {
     let file_path = file_exist(args.dir.to_string());
     // package::package_lock::Pkg::read_pkg_graph(name, file_path)
-    let mut pkg = package::package_lock::Pkg::new(name, file_path);
+    // let mut pkg = manager::pkg_lock("npm", name, file_path);
+    let mut pkg = manager::pkg_lock("pnpm", name, file_path);
 
-    pkg.read_pkg_graph().unwrap();
+    let pkg_info = pkg.read_pkg_graph().unwrap();
 
-    Ok(pkg.pkg_info)
+    Ok(pkg_info)
 }
 #[tokio::main]
 async fn main() {
@@ -55,7 +53,7 @@ async fn main() {
 
     // 测试读取package-lock.json文件
     // match run_package_lock(args, "vue".to_string()) {
-    match run_package_lock(args, "unocss".to_string()) {
+    match run_package_lock(args, "vite".to_string()) {
         Ok(pkg) => {
             println!("{:#?}", pkg)
         }

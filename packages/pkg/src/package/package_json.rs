@@ -1,4 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
+use utils;
 
 use std::{
     collections::HashMap,
@@ -46,10 +47,11 @@ pub fn read_pkg_json<P: AsRef<Path>>(
 pub async fn update_dependencies(
     file_path: String,
     params: UpdateParams,
+    manager_name: String,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
     println!(
-        "will update dep info :{} in the path {}",
-        &params.name, &file_path
+        "will update dep info {} install {} in the path {}",
+        &manager_name, &params.name, &file_path
     );
 
     // 项目所在目录
@@ -59,8 +61,21 @@ pub async fn update_dependencies(
 
     let name = format!("{}@{}", params.name, params.version);
 
-    // 判断系统，如果是windows，则使用npm.cmd
-    let npm_cmd = if cfg!(windows) { "npm.cmd" } else { "npm" };
+    let command_info = utils::rs_env::Env::new(&manager_name);
+    let npm_cmd = match command_info {
+        Some(env) => {
+            // 判断系统，如果是windows，则使用npm.cmd
+            if cfg!(windows) && env.is_cmd {
+                format!("{}.cmd", env.name)
+            } else {
+                env.name
+            }
+        }
+        None => {
+            return Err(format!("Not Found Env {}", manager_name).into());
+        }
+    };
+
     // 构建 npm install 命令
     let output = Command::new(npm_cmd)
         .arg("install")
