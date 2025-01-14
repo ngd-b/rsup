@@ -1,4 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
+use utils;
 
 use std::{
     collections::HashMap,
@@ -60,7 +61,7 @@ pub async fn update_dependencies(
 
     let name = format!("{}@{}", params.name, params.version);
 
-    let command_info = utils::env::Env::new(&manager_name);
+    let command_info = utils::rs_env::Env::new(&manager_name);
     let npm_cmd = match command_info {
         Some(env) => {
             // 判断系统，如果是windows，则使用npm.cmd

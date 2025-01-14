@@ -13,11 +13,11 @@ pub fn api(cfg: &mut web::ServiceConfig) {
  *
  */
 async fn get_env_data(_data: web::Data<Ms>) -> impl Responder {
-    let env = utils::env::EnvVec {
-        node: utils::env::Env::new("node"),
-        npm: utils::env::Env::new("npm"),
-        pnpm: utils::env::Env::new("pnpm"),
-        yarn: utils::env::Env::new("yarn"),
+    let env = utils::rs_env::EnvVec {
+        node: utils::rs_env::Env::new("node"),
+        npm: utils::rs_env::Env::new("npm"),
+        pnpm: utils::rs_env::Env::new("pnpm"),
+        yarn: utils::rs_env::Env::new("yarn"),
     };
 
     let res = ResParams::ok(env);
