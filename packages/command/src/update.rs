@@ -28,7 +28,7 @@ impl Options {
         println!("下载目录: {}", &rsup_url);
         println!("正在下载...");
         // 下载文件
-        match utils::download_file(&client, &url, &rsup_url).await {
+        match utils::file::download_file(&client, &url, &rsup_url).await {
             Ok(_) => {
                 println!("下载完成");
             }
@@ -39,7 +39,7 @@ impl Options {
         }
         println!("正在解压...");
         // 解压文件
-        match utils::decompress_file(&rsup_url, &dir).await {
+        match utils::file::decompress_file(&rsup_url, &dir).await {
             Ok(_) => {
                 println!("解压完成");
             }
@@ -73,7 +73,7 @@ impl Options {
         println!("下载目录: {}", &web_url);
         println!("正在下载...");
         // 下载文件
-        match utils::download_file(&client, &url, &web_url).await {
+        match utils::file::download_file(&client, &url, &web_url).await {
             Ok(_) => {
                 println!("下载完成");
             }
@@ -90,7 +90,7 @@ impl Options {
             fs::remove_dir_all(&target_dir).await?;
         }
         // 解压文件
-        match utils::decompress_file(&web_url, &target_dir).await {
+        match utils::file::decompress_file(&web_url, &target_dir).await {
             Ok(_) => {
                 println!("解压完成");
             }

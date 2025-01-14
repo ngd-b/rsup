@@ -63,6 +63,7 @@ jobs:
       #     github_changelog_generator -u ngd-b -p rsup
 
       - run: npx changelogithub # or changelogithub@0.12 if ensure the stable result
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
