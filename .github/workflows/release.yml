@@ -42,6 +42,7 @@ jobs:
         run: |
           echo "Installing zip"
           choco install zip -y
+          choco install ruby -y
 
       - name: Ensure build.sh is executable
         run: chmod +x build.sh
@@ -56,16 +57,31 @@ jobs:
       #     else
       #       ls -al
       #     fi
-      # - name: Generate changelog
-      #   run: |
-      #     echo "Generating changelog"
-      #     gem install github_changelog_generator
-      #     github_changelog_generator -u ngd-b -p rsup
 
-      - run: npx changelogithub # or changelogithub@0.12 if ensure the stable result
-        continue-on-error: true
+      - name: Generate changelog
+        run: |
+          echo "installing github_changelog_generator"
+          if [[ "${{ matrix.os }}" = "windows-latest" ]]; then
+            gem install github_changelog_generator
+          else
+            sudo gem install github_changelog_generator
+          fi
+          echo "Generating changelog"
+          github_changelog_generator -u ngd-b -p rsup
+
+      # - run: npx changelogithub # or changelogithub@0.12 if ensure the stable result
+      #   continue-on-error: true
+      #   env:
+      #     GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Commit and push changelog
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): Update changelog"
+          git push origin main
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: create github release
         id: new_release
