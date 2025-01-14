@@ -1,10 +1,12 @@
-name: installer release
+name: release
 
 on:
-  # push:
-  #   branches: main
-  #   tags: "v*"
+  push:
+    tags: "v*" # pushing a tag matching v*. e.g. v1.2.3
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   release-build:
@@ -41,11 +43,11 @@ jobs:
           echo "Installing zip"
           choco install zip -y
 
-      - name: Ensure build_installer.sh is executable
-        run: chmod +x build_installer.sh
+      - name: Ensure build.sh is executable
+        run: chmod +x build.sh
 
-      - name: build rsup installer release and compress for ${{matrix.os}}
-        run: bash ./build_installer.sh ${{matrix.os}}
+      - name: build release and create tar.gz for ${{matrix.os}}
+        run: bash ./build.sh ${{matrix.os}}
 
       # - name: list files
       #   run: |
@@ -54,6 +56,15 @@ jobs:
       #     else
       #       ls -al
       #     fi
+      # - name: Generate changelog
+      #   run: |
+      #     echo "Generating changelog"
+      #     gem install github_changelog_generator
+      #     github_changelog_generator -u ngd-b -p rsup
+
+      - run: npx changelogithub # or changelogithub@0.12 if ensure the stable result
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: create github release
         id: new_release
@@ -63,7 +74,8 @@ jobs:
           name: ${{github.ref_name}}
           make_latest: true
           files: |
-            rsup-installer-${{ matrix.os }}.tar.gz
-            rsup-installer-${{ matrix.os }}.zip
+            rsup-${{ matrix.os }}.tar.gz
+            rsup-${{ matrix.os }}.zip
+            CHANGELOG.md  # 上传生成的 changelog 文件
         # 增加超时时间
         timeout-minutes: 5
