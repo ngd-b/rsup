@@ -66,7 +66,6 @@ export default defineConfig({
         items: [
           {
             text: "rsup",
-            collapsed: false,
             items: [
               { text: "core", link: "core" },
               { text: "installer", link: "installer" },
@@ -79,7 +78,6 @@ export default defineConfig({
           },
           {
             text: "web",
-            collapsed: false,
             link: "",
           },
         ],
