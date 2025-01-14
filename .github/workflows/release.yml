@@ -5,6 +5,9 @@ on:
     tags: "v*" # pushing a tag matching v*. e.g. v1.2.3
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   release-build:
     # runs-on: ubuntu-latest
