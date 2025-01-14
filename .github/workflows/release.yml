@@ -56,17 +56,15 @@ jobs:
       #     else
       #       ls -al
       #     fi
-
       - name: create github release
         id: new_release
         uses: softprops/action-gh-release@v2.0.8
         with:
           tag_name: latest
-          name: ${{github.ref_name}}
-          make_latest: true
+          # name: ${{github.ref_name}}
+          # make_latest: true
           files: |
             rsup-${{ matrix.os }}.tar.gz
             rsup-${{ matrix.os }}.zip
-            CHANGELOG.md  # 上传生成的 changelog 文件
         # 增加超时时间
-        timeout-minutes: 5
+        # timeout-minutes: 5
