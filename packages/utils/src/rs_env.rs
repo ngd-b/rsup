@@ -2,6 +2,7 @@ use std::process::Command;
 
 use serde_derive::{Deserialize, Serialize};
 
+/// 环境变量
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Env {
     // 命令名称

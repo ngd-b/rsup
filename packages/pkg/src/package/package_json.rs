@@ -1,6 +1,4 @@
 use serde_derive::{Deserialize, Serialize};
-use utils;
-
 use std::{
     collections::HashMap,
     fs::File,
@@ -8,6 +6,7 @@ use std::{
     path::Path,
     process::{Command, Stdio},
 };
+use utils;
 
 /// define the attributes of package.json
 ///

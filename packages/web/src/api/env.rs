@@ -2,7 +2,6 @@ use crate::api::ResParams;
 use crate::socket::Ms;
 use actix_web::{web, HttpResponse, Responder};
 use utils;
-
 pub fn api(cfg: &mut web::ServiceConfig) {
     cfg.route("/get", web::get().to(get_env_data));
 }
