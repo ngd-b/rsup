@@ -111,6 +111,7 @@ pub async fn run(args: Args, package: Package) {
                     new_info.version = Some(version.clone());
                     new_info.versions = versions;
                     new_info.is_finish = true;
+                    new_info.is_dev = is_dev;
 
                     println!("finish fetch pkg info for:{}", name);
                     {

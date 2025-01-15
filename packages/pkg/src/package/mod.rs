@@ -74,6 +74,37 @@ impl Pkg {
         //     eprintln!("Error sending update signal: {}", e);
         // };
     }
+    /// 删除某个依赖
+    ///
+    /// 软删除，标记删除；还可以恢复
+    ///
+    pub async fn remove_pkg_info(
+        data: Arc<Mutex<Pkg>>,
+        pkg_info: package_json::RemoveParams,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut locked_data = data.lock().await;
+
+        let dep = if pkg_info.is_dev {
+            //
+            locked_data.dev_dependencies.clone()
+        } else {
+            locked_data.dependencies.clone()
+        };
+        // 查找name
+        let mut new_info = dep.get(&pkg_info.name).unwrap().clone();
+        // 标记删除
+        new_info.is_del = true;
+        {
+            // let mut res = res.lock().await;
+            if pkg_info.is_dev {
+                locked_data.dev_dependencies.insert(pkg_info.name, new_info);
+            } else {
+                locked_data.dependencies.insert(pkg_info.name, new_info);
+            }
+        };
+
+        Ok(())
+    }
     /// 生成依赖数据对象
     pub fn generate_pkg_info(data: Option<HashMap<String, String>>) -> HashMap<String, PkgInfo> {
         let mut res = HashMap::new();
@@ -126,6 +157,16 @@ impl Package {
     ) -> Result<(), Box<dyn Error>> {
         // let pkg = self.pkg.lock().await;
         match Pkg::update_pkg_info(self.pkg.clone(), pkg_info).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+    pub async fn remove_pkg(
+        self,
+        pkg_info: package_json::RemoveParams,
+    ) -> Result<(), Box<dyn Error>> {
+        // let pkg = self.pkg.lock().await;
+        match Pkg::remove_pkg_info(self.pkg.clone(), pkg_info).await {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
         }

@@ -22,7 +22,11 @@ pub struct PkgInfo {
     pub dist_tags: DistTags,
     pub versions: HashMap<String, VersionInfo>,
     #[serde(default)]
+    pub is_dev: bool,
+    #[serde(default)]
     pub is_finish: bool,
+    #[serde(default)]
+    pub is_del: bool,
 }
 impl Default for PkgInfo {
     fn default() -> Self {
@@ -38,7 +42,9 @@ impl Default for PkgInfo {
                 latest: String::new(),
             },
             versions: HashMap::new(),
+            is_dev: false,
             is_finish: false,
+            is_del: false,
         }
     }
 }
