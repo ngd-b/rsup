@@ -27,6 +27,9 @@ pub struct UpdateParams {
     pub name: String,
     pub version: String,
     pub is_dev: bool,
+    // 是否是切换依赖类型
+    // 开发依赖包、运行时依赖包
+    pub is_change: Option<bool>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RemoveParams {

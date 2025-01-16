@@ -62,9 +62,32 @@ async fn update_pkg(
         ReqParams::UpdatePkg(params) => {
             let data_clone = data.package.get_pkg().await;
 
+            let mut update_params = params.clone();
+            // 如果是切换依赖类型，选择先删除、在安装
+            if params.is_change.unwrap_or(false) {
+                // 切换依赖类型，先删除再安装
+                update_params.is_dev = !params.is_dev;
+                // 删除依赖
+                let file_path = data_clone.path.clone();
+                let manager_name = data_clone.manager_name.clone().unwrap();
+                // 先删除依赖
+                let remove_params = RemoveParams {
+                    name: params.name.clone(),
+                    is_dev: params.is_dev.clone(),
+                };
+                if let Err(e) = remove_dependencies(file_path, remove_params, manager_name).await {
+                    eprintln!("update dep err:{:#?}", e.to_string());
+
+                    let res = ResParams::<String>::err(e.to_string());
+                    return Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body(serde_json::to_string(&res).unwrap()));
+                };
+            }
+
             match update_dependencies(
                 data_clone.path.clone(),
-                params.clone(),
+                update_params,
                 data_clone.manager_name.unwrap(),
             )
             .await

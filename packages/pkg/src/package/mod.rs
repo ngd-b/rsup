@@ -43,6 +43,9 @@ impl Pkg {
     ) -> Result<(), Box<dyn Error>> {
         let mut locked_data = data.lock().await;
 
+        // 是否是切换依赖类型
+        let is_change = pkg_info.is_change.unwrap_or(false);
+        // 不是切换、更新版本
         let dep = if pkg_info.is_dev {
             //
             locked_data.dev_dependencies.clone()
@@ -61,14 +64,23 @@ impl Pkg {
         new_info.versions = versions;
         new_info.is_del = false;
 
-        {
-            // let mut res = res.lock().await;
-            if pkg_info.is_dev {
-                locked_data.dev_dependencies.insert(pkg_info.name, new_info);
+        // 切换
+        if is_change {
+            if new_info.is_dev {
+                locked_data.dev_dependencies.remove(&new_info.name);
             } else {
-                locked_data.dependencies.insert(pkg_info.name, new_info);
+                locked_data.dependencies.remove(&new_info.name);
             }
-        };
+            // 完成切换
+            new_info.is_dev = !new_info.is_dev
+        }
+
+        // let mut res = res.lock().await;
+        if new_info.is_dev {
+            locked_data.dev_dependencies.insert(pkg_info.name, new_info);
+        } else {
+            locked_data.dependencies.insert(pkg_info.name, new_info);
+        }
 
         Ok(())
         // if let Err(e) = tx.send(()).await {
