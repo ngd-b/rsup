@@ -59,6 +59,7 @@ impl Pkg {
         );
         new_info.version = Some(pkg_info.version);
         new_info.versions = versions;
+        new_info.is_del = false;
 
         {
             // let mut res = res.lock().await;

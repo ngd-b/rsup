@@ -79,11 +79,16 @@ pub async fn update_dependencies(
             return Err(format!("Not Found Env {}", manager_name).into());
         }
     };
-
+    // 构建命令参数
+    let mut args = vec![];
+    args.push("install");
+    args.push(&name);
+    if params.is_dev {
+        args.push("-D");
+    }
     // 构建 npm install 命令
     let output = Command::new(npm_cmd)
-        .arg("install")
-        .arg(&name)
+        .args(args)
         .current_dir(&dir_path) // 设置执行命令的目录
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
