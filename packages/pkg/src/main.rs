@@ -15,7 +15,7 @@ fn file_exist(dir: String) -> String {
 }
 
 /// 测试运行package 包
-async fn run_package(args: Args) {
+async fn _run_package(args: Args) {
     let package = package::Package::new();
 
     // let data_clone = data.clone();

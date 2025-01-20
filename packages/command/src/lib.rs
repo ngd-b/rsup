@@ -3,8 +3,8 @@ use clap::Parser;
 // 引入外部crate
 extern crate config as external_config;
 use config::Options as ConfigOptions;
+use rs_utils;
 use update::Options as UpdateOptions;
-use utils;
 
 mod config;
 mod update;
@@ -35,7 +35,7 @@ pub async fn run() {
         },
         Commands::Update { update } => {
             // 获取最新的包地址
-            let (rsup_url, rsup_web_url) = utils::get_pkg_url(None);
+            let (rsup_url, rsup_web_url) = rs_utils::get_pkg_url(None);
 
             // 获取命令安装目录
             let config = external_config::Config::get_config().await;

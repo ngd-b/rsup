@@ -1,7 +1,15 @@
 [package]
-name = "utils"
+name = "rs_utils"
 version = "0.1.0"
 edition = "2021"
+description = "rsup 工具包"
+license = "MIT"
+authors = ["hboot <bobolity@163.com>"]
+keywords = ["rsup", "rs_utils"]
+readme = "README.md"
+repository = "https://github.com/ngd-b/rsup/tree/main/packages/utils"
+homepage = "https://rsup.hboot.fun/api/utils"
+categories = ["command-line-utilities"]
 
 [dependencies]
 flate2 = "1.0.35"

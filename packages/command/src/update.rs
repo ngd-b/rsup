@@ -5,8 +5,8 @@ use std::{
 
 use clap::Parser;
 use reqwest::Client;
+use rs_utils;
 use tokio::fs;
-use utils;
 
 #[derive(Parser, Debug)]
 pub enum Options {
@@ -28,7 +28,7 @@ impl Options {
         println!("下载目录: {}", &rsup_url);
         println!("正在下载...");
         // 下载文件
-        match utils::rs_fs::download_file(&client, &url, &rsup_url).await {
+        match rs_utils::fs::download_file(&client, &url, &rsup_url).await {
             Ok(_) => {
                 println!("下载完成");
             }
@@ -39,7 +39,7 @@ impl Options {
         }
         println!("正在解压...");
         // 解压文件
-        match utils::rs_fs::decompress_file(&rsup_url, &dir).await {
+        match rs_utils::fs::decompress_file(&rsup_url, &dir).await {
             Ok(_) => {
                 println!("解压完成");
             }
@@ -73,7 +73,7 @@ impl Options {
         println!("下载目录: {}", &web_url);
         println!("正在下载...");
         // 下载文件
-        match utils::rs_fs::download_file(&client, &url, &web_url).await {
+        match rs_utils::fs::download_file(&client, &url, &web_url).await {
             Ok(_) => {
                 println!("下载完成");
             }
@@ -90,7 +90,7 @@ impl Options {
             fs::remove_dir_all(&target_dir).await?;
         }
         // 解压文件
-        match utils::rs_fs::decompress_file(&web_url, &target_dir).await {
+        match rs_utils::fs::decompress_file(&web_url, &target_dir).await {
             Ok(_) => {
                 println!("解压完成");
             }

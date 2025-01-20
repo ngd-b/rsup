@@ -1,22 +1,18 @@
 //! rsup 包的工具库
 //!
-//! 包括环境:
+//! 包括:
 //!
-//!   * 变量的查询、获取；
+//!   * 系统变量的查询、获取；
 //!   * 文件的上传、下载、压缩;
 //!
 //!
 
-/// 环境变量模块
-///
-/// 定义了变量结构体、查询方法
-pub mod rs_env;
-/// 文件处理模块
-///
-/// 定义了文件上传、下载、压缩方法
-///
-pub mod rs_fs;
+/// 环境变量模块,定义了变量结构体、查询方法
+pub mod env;
+/// 文件处理模块,定义了文件上传、下载、压缩方法
+pub mod fs;
 
+/// 下载源地址
 #[derive(Debug, Clone)]
 pub enum Origin {
     Github,
@@ -34,7 +30,10 @@ impl Origin {
 // 固定版本信息，
 const VERSION: &str = "latest";
 
+///
 /// 根据系统获取rsup、rsup-web下载的地址
+///
+/// > 现在默认只从github下载资源
 ///
 /// # Arguments:
 /// * os 操作系统
@@ -43,6 +42,8 @@ const VERSION: &str = "latest";
 /// # Returns
 /// * rsup 下载地址
 /// * rsup-web 下载地址
+///
+///
 ///
 pub fn get_pkg_url(origin: Option<Origin>) -> (String, String) {
     let os = std::env::consts::OS;
