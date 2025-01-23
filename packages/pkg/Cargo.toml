@@ -16,4 +16,4 @@ serde_derive = "1.0.204"
 serde_json = "1.0.120"
 serde_yaml = "0.9.34"
 tokio = { version = "1.39.2", features = ["full"] }
-utils = { version = "0.1.0", path = "../utils" }
+rs_utils = { version = "0.1.0", path = "../utils" }

@@ -11,14 +11,14 @@ use tokio::{fs, io::AsyncWriteExt};
 ///
 /// # Arguments
 /// * url 下载地址
-/// * target_dir 保存目录
+/// * target_dir 解压目录
 ///
 /// # Returns
-/// * Result<(), Box<dyn Error>>
+/// * `Result<(), Box<dyn Error>>`
 ///     
-///     解压成功返回Ok(())
+///     解压成功返回`Ok(())`
 ///
-///     解压失败返回Err(Box<dyn Error>)
+///     解压失败返回`Err(Box<dyn Error>)`
 ///
 pub async fn decompress_file(url: &str, target_dir: &str) -> Result<(), Box<dyn Error>> {
     let tar_gz = File::open(url)?;
@@ -36,20 +36,20 @@ pub async fn decompress_file(url: &str, target_dir: &str) -> Result<(), Box<dyn 
 
     Ok(())
 }
+///
 /// 下载文件
-/// 解压文件到指定目录
+///
 /// # Arguments
 /// * client 请求客户端
 /// * url 下载地址
-/// * output 保存目录
+/// * output 保存路径
 ///
 /// # Returns
-/// * Result<(), Box<dyn Error>>
+/// * `Result<(), Box<dyn Error>>`
+///     
+///     下载成功返回`Ok(())`
 ///
-///     下载成功返回Ok(())
-///
-///     下载失败返回Err(Box<dyn Error>)
-///
+///     下载失败返回`Err(Box<dyn Error>)`
 pub async fn download_file(client: &Client, url: &str, output: &str) -> Result<(), Box<dyn Error>> {
     // 下载地址
     let res = client.get(url).send().await?;
