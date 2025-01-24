@@ -65,20 +65,27 @@ export default defineConfig({
         base: "/api/",
         items: [
           {
-            text: "rsup",
+            text: "Api",
+            link: "index",
             items: [
-              { text: "core", link: "core" },
-              { text: "installer", link: "installer" },
-              { text: "config", link: "config" },
-              { text: "command", link: "command" },
-              { text: "pkg", link: "pkg" },
-              { text: "web", link: "web" },
-              { text: "utils", link: "utils" },
+              {
+                text: "rsup",
+                base: "/api/rsup/",
+                collapsed: false,
+                items: [
+                  { text: "core", link: "core" },
+                  { text: "config", link: "config" },
+                  { text: "command", link: "command" },
+                  { text: "pkg", link: "pkg" },
+                  { text: "web", link: "web" },
+                  { text: "utils", link: "utils" },
+                ],
+              },
+              {
+                text: "rsup-installer",
+                link: "",
+              },
             ],
-          },
-          {
-            text: "web",
-            link: "",
           },
         ],
       },
@@ -103,6 +110,10 @@ export default defineConfig({
     docFooter: {
       prev: "上一页",
       next: "下一页",
+    },
+    editLink: {
+      pattern: "https://github.com/ngd-b/rsup/edit/main/docs/:path",
+      text: "在 GitHub 上编辑此页面",
     },
   },
   // base: "/rsup/",

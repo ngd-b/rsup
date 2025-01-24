@@ -50,7 +50,7 @@ rsup config set web.port 8889
 rsup config get web.port
 ```
 
-## `update` {#command-update}
+## `update` <Badge type="tip" text="important" /> {#command-update}
 
 `update`命令用于更新`rsup`和`web`服务。提供了方便更新服务的功能，这对于更新`rsup`和`web`服务来说十分有用。当然也可以手动下载后覆盖旧版本。
 

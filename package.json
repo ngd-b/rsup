@@ -1,6 +1,6 @@
 {
   "name": "rsup",
-  "version": "0.5.3",
+  "version": "0.6.1",
   "description": "分析前端项目依赖，展示依赖新版本信息",
   "license": "Apache-2.0",
   "author": {
