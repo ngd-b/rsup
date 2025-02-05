@@ -1,6 +1,5 @@
----
-layout: doc
----
+
+[[toc]]
 
 # 什么是Rsup? {#what-is-rsup}
 

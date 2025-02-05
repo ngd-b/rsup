@@ -12,6 +12,10 @@ curl -fsSL https://raw.githubusercontent.com/ngd-b/rsup/main/install.sh | sh
 
 ## 手动安装 {#macos-manual}
 
+手动安装针对不能使用安装脚本的用户。也可以了解到安装的过程以及生成的文件。
+
+### 半手动安装 {#macos-manual-half}
+
 如果使用脚本安装有问题，可以下载安装程序，然后执行安装程序来安装`rsup`。[下载地址](https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-macos-latest.tar.gz)
 
 下载完文件是一个压缩包，完成解压。可以得到一个`installer`安装程序。
@@ -44,7 +48,9 @@ rsup -V
 
 ### 全手动安装 {#macos-manual-full}
 
-下载文件主要包含`rsup`和`rsup-web`两个文件，有时在命令行中下载缓慢，但是两个文件其实只有几MB，在浏览器中下载可能更快，所以我们可以直接下载资源，然后放到指定目录下即可。
+有时在命令行中下载缓慢，但是两个文件其实只有几MB，在浏览器中下载可能更快，所以我们可以直接下载资源，然后放到指定目录下即可。
+
+下载文件主要包含`rsup`和`rsup-web`两个文件。
 
 #### 创建`/opt/rsup`目录
 

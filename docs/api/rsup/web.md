@@ -19,8 +19,8 @@ static_dir = "/opt/rsup/web"
 
 `http`请求接口前缀为`/api`,分功能模块，又分为：
 
-* `/pkg` 提供了获取项目依赖相关的信息。
-* `/env` 提供获取当前环境下的`node` 版本信息，包括：`npm`版本、`pnpm`版本、`yarn`版本。
+* `/pkg/*` 提供了获取项目依赖相关的信息。
+* `/env/*` 提供获取当前环境下的`node` 版本信息，包括：`npm`版本、`pnpm`版本、`yarn`版本。
 
 `http`请求统一响应格式为：
 
@@ -55,7 +55,7 @@ impl<T> ResParams<T> {
 
     没有请求参数;
 
-    响应`Response`返回当前项目所有的依赖最新版本信息。数据结构信息查看[`Pkg`数据结构定义](/pkg)
+    响应`Response`返回当前项目所有的依赖最新版本信息。数据结构信息查看[`Pkg`数据结构定义](./pkg#pkg-pkg)
 
 * `/update` 更新指定的依赖到指定版本
 
@@ -88,7 +88,7 @@ impl<T> ResParams<T> {
     }
     ```
 
-    响应`Response`数据为当前依赖数据信息，包括根据`lock`文件解析出的关系数据。数据结构定义请查看[`PkgInfo`数据结构定义](/pkg)
+    响应`Response`数据为当前依赖数据信息，包括根据`lock`文件解析出的关系数据。数据结构定义请查看[`PkgInfo`数据结构定义](./pkg#pkg-info)
 
 * `/remove` 移除指定的依赖
 

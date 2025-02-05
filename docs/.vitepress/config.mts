@@ -52,11 +52,12 @@ export default defineConfig({
             base: "/guide/start/",
             items: [
               {
-                text: "rsup命令使用",
+                text: "rsup使用",
                 link: "base",
                 items: [{ text: "命令行功能", link: "command" }],
               },
               { text: "web功能", link: "web" },
+              { text: "配置文件", link: "config" },
             ],
           },
         ],
@@ -98,7 +99,7 @@ export default defineConfig({
     ],
     footer: {
       message: "Released under the Apache License.",
-      copyright: "Copyright © 2023-present hboot",
+      copyright: "Copyright © 2024-present hboot",
     },
     lastUpdated: {
       text: "最后更新于",
@@ -114,6 +115,13 @@ export default defineConfig({
     editLink: {
       pattern: "https://github.com/ngd-b/rsup/edit/main/docs/:path",
       text: "在 GitHub 上编辑此页面",
+    },
+    outline: {
+      level: [2, 6],
+      label: "页面导航",
+    },
+    search: {
+      provider: "local",
     },
   },
   // base: "/rsup/",
