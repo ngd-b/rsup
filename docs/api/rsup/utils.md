@@ -4,9 +4,12 @@
 `utils`提供全局通用的一些工具函数。
 
 > [!IMPORTANT]
-> 由于`rust-analyzer` 语法检测的问题，会提示`utils`下的方法未定义，所以修改`Cargo.toml`的名称`name = "rs_utils"`
+> 由于`rust-analyzer` 语法检测的问题，会提示`utils`下的方法未定义，所以修改`Cargo.toml`的名称`name = "rsup_utils"`
 
-在使用`utils`时，安装依赖名称为`rs_utils`
+>[!NOTE]
+> 其他功能包安装使用的是`rs_utils`,由于需要发布到`crates-io`。但是已经存在同样的名称，所以修改为`rsup_utils`
+
+在使用`utils`时，安装依赖名称为`rsup_utils`. [访问crates.io](https://crates.io/crates/rsup_utils)
 
 ## `fs` {#uitls-fs}
 
