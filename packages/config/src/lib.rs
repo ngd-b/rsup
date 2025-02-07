@@ -1,4 +1,31 @@
+//！Rsup 配置文件
+//！
+//! 读取配置文件
+//! 操作配置文件
+//! 默认目录：
+//! macos|linux: /opt/rsup
+//! windows: C:\\Program Files\\rsup
+//!
+//! 配置文件：
+//! config.toml
+//!
+//! 配置文件格式：
+//! ```toml
+//! name = "rsup"
+//! version = "0.1.0"
+//! dir = "/opt/rsup"
+//! [web]
+//! port = 8888
+//! static_dir = "/opt/rsup/web"
+//!
+//! [pkg]
+//! npm_registry = "https://registry.npmmirror.com"
+//! ```
+//!
+
 use anyhow::{anyhow, Error};
+use once_cell::sync::Lazy;
+use serde_derive::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::{self, Write},
@@ -6,15 +33,8 @@ use std::{
 };
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use once_cell::sync::Lazy;
-/// 解析配置文件
-/// 操作配置文件
-/// 默认目录：
-/// macos|linux: /opt/rsup
-/// windows: C:\\Program Files\\rsup
-use serde_derive::{Deserialize, Serialize};
-// 全局共享配置数据
-
+/// 配置共享全局变量,避免重复读取配置文件
+///
 pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     // 这里调用初始化
     let config = Config::read_config().unwrap();
@@ -22,6 +42,8 @@ pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     RwLock::new(config)
 });
 
+/// 配置文件结构体
+///
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub name: String,
@@ -32,11 +54,15 @@ pub struct Config {
     // 包管理配置
     pub pkg: PkgConfig,
 }
+
+/// web 配置结构体
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WebConfig {
     pub port: u16,
     pub static_dir: String,
 }
+
+/// 包管理配置结构体
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgConfig {
     pub npm_registry: String,
@@ -62,6 +88,9 @@ impl Default for Config {
 impl Config {
     /// 读取配置文件
     ///
+    /// Returns:
+    /// - `Result<Config, Box<dyn std::error::Error>>`
+    ///
     fn read_config() -> Result<Config, Box<dyn std::error::Error>> {
         // 读取配置文件
         let config_dir = Config::get_url();
@@ -84,6 +113,11 @@ impl Config {
         Ok(config)
     }
     /// 写入配置文件
+    ///
+    /// Returns:
+    /// - `Result<Config, Error>`
+    ///
+
     pub fn write_config() -> Result<Config, Error> {
         let config_dir = Config::get_url();
 
@@ -127,6 +161,10 @@ impl Config {
         CONFIG.write().await
     }
     /// 根据不同系统生成不同的配置文件路径
+    ///
+    /// Returns:
+    /// - `String`
+    ///
     pub fn get_url() -> String {
         match std::env::consts::OS {
             "windows" => "C:\\Program Files\\rsup".to_string(),
@@ -134,6 +172,10 @@ impl Config {
         }
     }
     /// 获取配置信息
+    ///
+    /// Returns:
+    /// - `Option<String>`
+    ///
     pub fn get(&self, key: &str) -> Option<String> {
         let mut parts: Vec<&str> = key.split(".").collect();
 
@@ -189,6 +231,7 @@ impl Config {
 
 /// web 配置
 /// 获取配置信息
+///
 impl WebConfig {
     pub fn get(&self, mut parts: Vec<&str>) -> Option<String> {
         if parts.is_empty() {
@@ -217,6 +260,8 @@ impl WebConfig {
     }
 }
 
+/// 包管理配置
+///
 impl PkgConfig {
     pub fn get(&self, mut parts: Vec<&str>) -> Option<String> {
         if parts.is_empty() {

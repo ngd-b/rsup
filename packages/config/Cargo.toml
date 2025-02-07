@@ -1,7 +1,15 @@
 [package]
-name = "config"
+name = "rsup_config"
 version = "0.1.0"
 edition = "2021"
+description = "rsup 配置包"
+license = "MIT"
+authors = ["hboot <bobolity@163.com>"]
+keywords = ["rsup", "rsup_config"]
+readme = "README.md"
+repository = "https://github.com/ngd-b/rsup/tree/main/packages/config"
+homepage = "https://rsup.hboot.fun/api/rsup/config"
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow.workspace = true
