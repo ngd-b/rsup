@@ -1,6 +1,6 @@
 [package]
 name = "rsup_utils"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "rsup 工具包"
 license = "MIT"
