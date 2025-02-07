@@ -4,7 +4,6 @@ use std::{
 };
 
 use clap::Parser;
-use reqwest::Client;
 use rs_utils;
 use tokio::fs;
 
@@ -17,8 +16,6 @@ pub enum Options {
 impl Options {
     /// 更新rsup命令包
     pub async fn rsup_update(url: String, dir: &str) -> Result<(), Box<dyn Error>> {
-        let client = Client::new();
-
         // 下载目录
         let rsup_file = PathBuf::from(dir).join("rsup.tar.gz");
         let rsup_url = rsup_file.to_string_lossy().to_string();
@@ -28,7 +25,7 @@ impl Options {
         println!("下载目录: {}", &rsup_url);
         println!("正在下载...");
         // 下载文件
-        match rs_utils::fs::download_file(&client, &url, &rsup_url).await {
+        match rs_utils::fs::download_file(&url, &rsup_url).await {
             Ok(_) => {
                 println!("下载完成");
             }
@@ -63,8 +60,6 @@ impl Options {
     /// 更新web服务资源
     ///
     pub async fn rsup_web_update(url: String, dir: &str) -> Result<(), Box<dyn Error>> {
-        let client = Client::new();
-
         // 下载目录
         let web_url = format!("{}/rsup-web.tar.gz", &dir);
 
@@ -73,7 +68,7 @@ impl Options {
         println!("下载目录: {}", &web_url);
         println!("正在下载...");
         // 下载文件
-        match rs_utils::fs::download_file(&client, &url, &web_url).await {
+        match rs_utils::fs::download_file(&url, &web_url).await {
             Ok(_) => {
                 println!("下载完成");
             }

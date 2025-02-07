@@ -50,7 +50,8 @@ pub async fn decompress_file(url: &str, target_dir: &str) -> Result<(), Box<dyn 
 ///     下载成功返回`Ok(())`
 ///
 ///     下载失败返回`Err(Box<dyn Error>)`
-pub async fn download_file(client: &Client, url: &str, output: &str) -> Result<(), Box<dyn Error>> {
+pub async fn download_file(url: &str, output: &str) -> Result<(), Box<dyn Error>> {
+    let client = Client::new();
     // 下载地址
     let res = client.get(url).send().await?;
 

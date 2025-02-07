@@ -15,7 +15,7 @@
 
 `fs`提供了文件下载、文件解压的工具函数。
 
-* `download_file(client: &Client, url: &str, output: &str) -> Result<(), Box<dyn Error>>` 下载文件`url`到指定路径`output`
+* `download_file(url: &str, output: &str) -> Result<(), Box<dyn Error>>` 下载文件`url`到指定路径`output`
 
 * `decompress_file(url: &str, target_dir: &str) -> Result<(), Box<dyn Error>>`  解压指定文件`url`到指定路径`target_dir`
 

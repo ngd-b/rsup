@@ -7,7 +7,6 @@ edition = "2021"
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 config = { version = "0.1.0", path = "../config", package = "rsup_config" }
-reqwest = "0.12.9"
 serde = "1.0.210"
 serde_derive = "1.0.210"
 tokio = { version = "1.41.0", features = ["full"] }
