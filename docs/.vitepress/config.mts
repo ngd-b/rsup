@@ -84,7 +84,9 @@ export default defineConfig({
               },
               {
                 text: "rsup-installer",
-                link: "",
+                base: "/api/rsup-installer/",
+                collapsed: false,
+                items: [{ text: "core", link: "core" }],
               },
             ],
           },

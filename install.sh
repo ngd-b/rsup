@@ -47,16 +47,16 @@ URL=""
 OS=$(uname -s)
 case $OS in 
     Darwin)
-        URL="https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-macos-latest.tar.gz"
+        URL="https://github.com/ngd-b/rsup-intaller/releases/download/latest/rsup-installer-macos-latest.tar.gz"
         ;;
     Linux)
-        URL = "https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-ubuntu-latest.tar.gz"
+        URL = "https://github.com/ngd-b/rsup-intaller/releases/download/latest/rsup-installer-ubuntu-latest.tar.gz"
         ;;
     *)  
         echo "This script is running on a Windows system."
         echo "Please install the required software manually by following these steps:"
         echo ""
-        echo "1. Download the rsup installer from https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-windows-latest.zip"
+        echo "1. Download the rsup installer from https://github.com/ngd-b/rsup-intaller/releases/download/latest/rsup-installer-windows-latest.zip"
         echo "2. Unzip the file"
         echo "3. Run the installer"
         echo "4. Add the rsup directory to your PATH"

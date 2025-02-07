@@ -16,7 +16,7 @@ curl -fsSL https://raw.githubusercontent.com/ngd-b/rsup/main/install.sh | sh
 
 ### 半手动安装 {#macos-manual-half}
 
-如果使用脚本安装有问题，可以下载安装程序，然后执行安装程序来安装`rsup`。[下载地址](https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-macos-latest.tar.gz)
+如果使用脚本安装有问题，可以下载安装程序，然后执行安装程序来安装`rsup`。[下载地址](https://github.com/ngd-b/rsup-intaller/releases/download/latest/rsup-installer-macos-latest.tar.gz)
 
 下载完文件是一个压缩包，完成解压。可以得到一个`installer`安装程序。
 

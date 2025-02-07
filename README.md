@@ -19,11 +19,11 @@ rust 工具库用来升级前端项目。旧项目迁移新脚手架工具。
 
 `rsup`命令包含了配置文件、可执行文件、web服务文件等。根据不同的系统，提供了三种工具安装包包括linux、macos、windows。
 
-[macos installer](https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-macos-latest.tar.gz)
+[macos installer](https://github.com/ngd-b/rsup-intaller/releases/download/latest/rsup-installer-macos-latest.tar.gz)
 
-[ubuntu instanller](https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-ubuntu-latest.tar.gz)
+[ubuntu instanller](https://github.com/ngd-b/rsup-intaller/releases/download/latest/rsup-installer-ubuntu-latest.tar.gz)
 
-[windows instanller](https://github.com/ngd-b/rsup/releases/download/latest/rsup-installer-windows-latest.zip)
+[windows instanller](https://github.com/ngd-b/rsup-intaller/releases/download/latest/rsup-installer-windows-latest.zip)
 
 1. **推荐** 使用脚本安装
 
