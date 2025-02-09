@@ -1,3 +1,4 @@
+use futures_util::future;
 use rs_utils;
 use serde_derive::{Deserialize, Serialize};
 use std::{
@@ -6,8 +7,9 @@ use std::{
     io::BufReader,
     path::Path,
     process::{Command, Stdio},
+    sync::Arc,
 };
-
+use tokio::sync::Mutex;
 /// define the attributes of package.json
 ///
 /// the `dependencies` and `devDependencies` are optional
@@ -177,7 +179,6 @@ pub async fn update_dependencies(
 
     if output.status.success() {
         println!("Successfully installed {}", &name);
-
         // 成功后需要更新全局的数据
         Ok(None)
     } else {
@@ -252,4 +253,50 @@ pub async fn remove_dependencies(
 
         Err(error_message.into())
     }
+}
+
+/// 批量更新依赖
+///
+pub async fn batch_update_dependencies(
+    file_path: String,
+    params: Vec<UpdateParams>,
+    manager_name: String,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    println!(
+        "will update all deps info {} in the path {}",
+        &manager_name, &file_path
+    );
+    // 记录哪些依赖包更新成功；哪些依赖包更新失败
+
+    // 并发执行更新
+    let futures = params.into_iter().map(|param| {
+        let file_path = file_path.clone();
+        let manager_name = manager_name.clone();
+
+        let param = param.clone();
+
+        tokio::spawn(async move {
+            match update_dependencies(file_path, param.clone(), manager_name).await {
+                Ok(_) => {
+                    println!("update dep {} success", &param.name);
+                    Some(param.name)
+                }
+                Err(e) => {
+                    println!("update dep {} failed {}", &param.name, e);
+                    None
+                }
+            }
+        })
+    });
+
+    let success_deps = future::join_all(futures).await;
+
+    let mut deps = vec![];
+    for dep in success_deps {
+        if let Ok(Some(name)) = dep {
+            deps.push(name)
+        }
+    }
+
+    Ok(deps)
 }

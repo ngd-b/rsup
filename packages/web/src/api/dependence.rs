@@ -2,8 +2,8 @@ use actix_web::http::Error;
 use actix_web::{web, HttpResponse, Responder};
 use pkg::manager::pkg_lock;
 use pkg::package::package_json::{
-    quick_install_dependencies, remove_dependencies, update_dependencies, QuickInstallParams,
-    RemoveParams, UpdateParams,
+    batch_update_dependencies, quick_install_dependencies, remove_dependencies,
+    update_dependencies, QuickInstallParams, RemoveParams, UpdateParams,
 };
 
 use crate::api::ResParams;
@@ -19,8 +19,6 @@ pub struct RelationGraphReq {
 #[serde(untagged)]
 pub enum ReqParams {
     UpdatePkg(UpdateParams),
-    // 批量数组更新
-    UpdateAllPkg(Vec<UpdateParams>),
     // 删除
     // 目前接受一个name ，直接使用RelationGraphReq的结构题
     RemovePkg(RemoveParams),
@@ -28,6 +26,8 @@ pub enum ReqParams {
     RelationGraph(RelationGraphReq),
     // 一键安装所有依赖
     QuickInstall(QuickInstallParams),
+    // 批量更新
+    BatchUpdatePkg(Vec<UpdateParams>),
 }
 
 /// 定义数据接口
@@ -37,7 +37,8 @@ pub fn api(cfg: &mut web::ServiceConfig) {
         .route("/update", web::post().to(update_pkg))
         .route("/graph", web::get().to(relation_graph))
         .route("/remove", web::post().to(remove_pkg))
-        .route("/quickInstall", web::post().to(quick_install));
+        .route("/quickInstall", web::post().to(quick_install))
+        .route("/batchUpdate", web::post().to(batch_update_pkg));
 }
 
 /// 获取数据接口
@@ -263,6 +264,70 @@ async fn quick_install(
                     // 更新当前确定使用的包管理工具
                     let mut data_clone = data.package.pkg.lock().await;
                     data_clone.manager_name = Some(params.manager_name.clone());
+
+                    // 发送消息更新
+                    data.package.sender.lock().await.send(()).await.unwrap();
+                    Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body(serde_json::to_string(&res).unwrap()))
+                }
+                Err(e) => {
+                    eprintln!("remove dependence err:{:#?}", e.to_string());
+
+                    let res = ResParams::<String>::err(e.to_string());
+                    Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body(serde_json::to_string(&res).unwrap()))
+                }
+            }
+        }
+        err => {
+            println!("Invalid request parameters:{:#?}", err);
+            let res =
+                ResParams::<String>::err("Invalid request parameters".to_string().to_string());
+            Ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .body(serde_json::to_string(&res).unwrap()))
+        }
+    }
+}
+
+/// 批量更新依赖包
+///
+/// # Arguments
+/// * req 请求参数
+/// * data 请求上下文
+///
+/// # Returns
+/// * Result<HttpResponse, Box<dyn Error>>
+///
+async fn batch_update_pkg(
+    req: web::Json<ReqParams>,
+    data: web::Data<Ms>,
+) -> Result<impl Responder, Error> {
+    println!("receive 【batch_update_pkg】 req param {:?}", req);
+    // 调用pkg更新依赖
+    match &*req {
+        ReqParams::BatchUpdatePkg(params) => {
+            let data_clone = data.package.get_pkg().await;
+
+            match batch_update_dependencies(
+                data_clone.path.clone(),
+                params.clone(),
+                data_clone.manager_name.unwrap(),
+            )
+            .await
+            {
+                Ok(names) => {
+                    let res = ResParams::ok(names.clone());
+
+                    // 更新依赖包
+                    for param in params {
+                        let data_clone = data.get_ref().clone();
+                        if names.contains(&param.name) {
+                            data_clone.package.update_pkg(param.clone()).await.unwrap();
+                        }
+                    }
 
                     // 发送消息更新
                     data.package.sender.lock().await.send(()).await.unwrap();
