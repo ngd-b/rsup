@@ -2,7 +2,8 @@ use actix_web::http::Error;
 use actix_web::{web, HttpResponse, Responder};
 use pkg::manager::pkg_lock;
 use pkg::package::package_json::{
-    remove_dependencies, update_dependencies, RemoveParams, UpdateParams,
+    quick_install_dependencies, remove_dependencies, update_dependencies, QuickInstallParams,
+    RemoveParams, UpdateParams,
 };
 
 use crate::api::ResParams;
@@ -25,6 +26,8 @@ pub enum ReqParams {
     RemovePkg(RemoveParams),
     //
     RelationGraph(RelationGraphReq),
+    // 一键安装所有依赖
+    QuickInstall(QuickInstallParams),
 }
 
 /// 定义数据接口
@@ -33,7 +36,8 @@ pub fn api(cfg: &mut web::ServiceConfig) {
     cfg.route("/get", web::get().to(get_data))
         .route("/update", web::post().to(update_pkg))
         .route("/graph", web::get().to(relation_graph))
-        .route("/remove", web::post().to(remove_pkg));
+        .route("/remove", web::post().to(remove_pkg))
+        .route("/quickInstall", web::post().to(quick_install));
 }
 
 /// 获取数据接口
@@ -206,6 +210,60 @@ async fn remove_pkg(
                     // 更新依赖包
                     let data_clone = data.get_ref().clone();
                     data_clone.package.remove_pkg(params.clone()).await.unwrap();
+                    // 发送消息更新
+                    data.package.sender.lock().await.send(()).await.unwrap();
+                    Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body(serde_json::to_string(&res).unwrap()))
+                }
+                Err(e) => {
+                    eprintln!("remove dependence err:{:#?}", e.to_string());
+
+                    let res = ResParams::<String>::err(e.to_string());
+                    Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body(serde_json::to_string(&res).unwrap()))
+                }
+            }
+        }
+        err => {
+            println!("Invalid request parameters:{:#?}", err);
+            let res =
+                ResParams::<String>::err("Invalid request parameters".to_string().to_string());
+            Ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .body(serde_json::to_string(&res).unwrap()))
+        }
+    }
+}
+
+/// 快速一键安装项目依赖
+///
+/// # Arguments
+/// * req 请求参数
+/// * data 请求上下文
+///
+/// # Returns
+/// * Result<HttpResponse, Box<dyn Error>>
+///
+///
+async fn quick_install(
+    req: web::Json<ReqParams>,
+    data: web::Data<Ms>,
+) -> Result<impl Responder, Error> {
+    println!("receive 【quick_install】 req param {:?}", req);
+    // 调用pkg更新依赖
+    match &*req {
+        ReqParams::QuickInstall(params) => {
+            let data_clone = data.package.get_pkg().await;
+
+            match quick_install_dependencies(data_clone.path.clone(), params.clone()).await {
+                Ok(_) => {
+                    let res = ResParams::ok("");
+                    // 更新当前确定使用的包管理工具
+                    let mut data_clone = data.package.pkg.lock().await;
+                    data_clone.manager_name = Some(params.manager_name.clone());
+
                     // 发送消息更新
                     data.package.sender.lock().await.send(()).await.unwrap();
                     Ok(HttpResponse::Ok()

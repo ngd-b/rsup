@@ -37,6 +37,15 @@ pub struct RemoveParams {
     pub is_dev: bool,
 }
 
+/// 一键快速安装依赖结构题
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct QuickInstallParams {
+    pub manager_name: String,
+    pub is_registry: bool,
+    pub registry: Option<String>,
+    pub params: Option<Vec<String>>,
+}
 /// read package.json file from the path and parse it into PkgJson struct
 ///
 pub fn read_pkg_json<P: AsRef<Path>>(
@@ -46,6 +55,74 @@ pub fn read_pkg_json<P: AsRef<Path>>(
     let reader = BufReader::new(file);
     let package = serde_json::from_reader(reader)?;
     Ok(package)
+}
+
+/// 一键安装依赖
+///
+///
+pub async fn quick_install_dependencies(
+    file_path: String,
+    params: QuickInstallParams,
+) -> Result<(), Box<dyn std::error::Error>> {
+    println!(
+        "will quick install dep in the path {} use {}",
+        &file_path, &params.manager_name
+    );
+
+    // 项目所在目录
+    let path = Path::new(&file_path);
+
+    let dir_path = path.parent().unwrap().to_path_buf();
+
+    let command_info = rs_utils::env::Env::new(&params.manager_name);
+    let npm_cmd = match command_info {
+        Some(env) => {
+            // 判断系统，如果是windows，则使用npm.cmd
+            if cfg!(windows) && env.is_cmd {
+                format!("{}.cmd", env.name)
+            } else {
+                env.name
+            }
+        }
+        None => {
+            return Err(format!("Not Found Env {}", &params.manager_name).into());
+        }
+    };
+
+    let mut args = vec![];
+    args.push("install".to_string());
+    if params.is_registry {
+        args.push("--registry".to_string());
+        args.push(params.registry.unwrap().clone());
+    }
+    if let Some(params) = params.params {
+        args.extend(params);
+    }
+    // 构建 npm install 命令
+    let output = Command::new(npm_cmd)
+        .args(args)
+        .current_dir(&dir_path) // 设置执行命令的目录
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        // .status()?; // 执行命令并等待结果
+        .output()?;
+
+    if output.status.success() {
+        println!("Successfully installed");
+
+        // 成功后需要更新全局的数据
+        Ok(())
+    } else {
+        // 将错误信息发送给前端
+        let stderr_str = String::from_utf8_lossy(&output.stderr).into_owned();
+        let stdout_str = String::from_utf8_lossy(&output.stdout).into_owned();
+
+        let error_message = format!("Failed to install",);
+        println!("stderr_str: {}", stderr_str);
+        println!("stdout_str: {}", stdout_str);
+
+        Err(error_message.into())
+    }
 }
 
 /// 更新某个npm依赖包
