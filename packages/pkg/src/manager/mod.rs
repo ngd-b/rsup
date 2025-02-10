@@ -112,16 +112,14 @@ pub fn pkg_lock(name: &str, dep_name: String, file_path: String) -> Box<dyn PkgL
 /**
  * 根据当前项目下的文件夹，判断当前使用的包管理工具
  */
-pub fn get_current_manager(dir: &Path) -> String {
-    let name = if dir.join("package-lock.json").exists() {
-        ManagerType::Npm
+pub fn get_current_manager(dir: &Path) -> Option<String> {
+    if dir.join("package-lock.json").exists() {
+        Some(ManagerType::Npm.to_string())
     } else if dir.join("pnpm-lock.yaml").exists() {
-        ManagerType::Pnpm
+        Some(ManagerType::Pnpm.to_string())
     } else if dir.join("yarn.lock").exists() {
-        ManagerType::Yarn
+        Some(ManagerType::Yarn.to_string())
     } else {
-        ManagerType::Npm
-    };
-
-    name.to_string()
+        None
+    }
 }
