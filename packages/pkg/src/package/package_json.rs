@@ -7,9 +7,7 @@ use std::{
     io::BufReader,
     path::Path,
     process::{Command, Stdio},
-    sync::Arc,
 };
-use tokio::sync::Mutex;
 /// define the attributes of package.json
 ///
 /// the `dependencies` and `devDependencies` are optional
