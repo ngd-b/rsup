@@ -36,6 +36,7 @@ pub struct Args {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgJson {
     pub name: Option<String>,
+    pub absolute_path: String,
     pub version: Option<String>,
     pub description: Option<String>,
     pub scripts: Option<HashMap<String, String>>,

@@ -3,6 +3,10 @@
 
 `config`管理`rsup`的配置文件`config.toml`,可以生成、读取、修改配置文件。
 
+`config`提供的配置读取、写入函数公用。在安装器执行时需要调用，所以发布到`crates-io`，包名为`rsup_config`.
+
+在使用`config`时，安装依赖名称为`rsup_config`. [访问crates.io](https://crates.io/crates/rsup_config)
+
 ```rs:line-numbers
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {

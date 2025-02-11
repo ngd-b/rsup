@@ -21,7 +21,7 @@ export default defineConfig({
         items: [
           {
             text: "更新日志",
-            link: "https://github.com/ngd-b/rsup/CHANGELOG.md",
+            link: "https://github.com/ngd-b/rsup/releases",
           },
         ],
       },

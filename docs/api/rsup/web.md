@@ -104,6 +104,34 @@ impl<T> ResParams<T> {
 
     响应`Response`为标准响应结构体。
 
+* `/quickInstall` 快速一键安装依赖
+
+    请求参数结构体定义`Request`：
+
+    ```rs
+    #[derive(Debug, Serialize, Deserialize, Clone)]
+    pub struct QuickInstallParams {
+        pub manager_name: String,
+        pub is_registry: bool,
+        pub registry: Option<String>,
+        pub params: Option<Vec<String>>,
+    }
+    ```
+
+    响应`Response`为标准响应结构体。
+
+* `/batchUpdate` 批量更新依赖
+
+    请求参数结构体定义`Request`,批量更新分为`pathc/minor/major`版本更新，更新参数为单个`UpdateParams`结构体的集合`Vec<UpdateParams>`.
+
+    响应参数结构体定义`Response`为标准响应结构体,响应数据为集合`Vec<String>`.
+
+* `/reload` 重新加载依赖
+
+    请求参数无.
+
+    响应参数结构体定义`Response`为标准响应结构体.
+
 ### `/env` {#web-http-env}
 
 * `/get` 返回当前环境`node`\ `pnpm` \ `npm` 等版本信息。
