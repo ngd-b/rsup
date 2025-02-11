@@ -1,16 +1,16 @@
 {
   "name": "rsup",
-  "version": "0.6.1",
-  "description": "分析前端项目依赖，展示依赖新版本信息",
+  "version": "0.7.1",
+  "description": "分析前端项目依赖，展示依赖新版本信息、依赖关系图",
   "license": "Apache-2.0",
   "author": {
     "name": "hboot",
     "email": "bobolity@163.com"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.4.1",
-    "@commitlint/config-conventional": "^19.4.1",
-    "husky": "^9.1.5"
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "husky": "^9.1.6"
   },
   "scripts": {
     "prepare": "husky",

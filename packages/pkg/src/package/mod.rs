@@ -13,6 +13,8 @@ use tokio::sync::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pkg {
     pub path: String,
+    // 绝对路径
+    pub absolute_path: String,
     pub name: Option<String>,
     pub version: Option<String>,
     pub description: Option<String>,
@@ -27,6 +29,7 @@ impl Pkg {
     pub fn new() -> Self {
         Pkg {
             path: String::new(),
+            absolute_path: String::new(),
             name: None,
             version: None,
             description: None,

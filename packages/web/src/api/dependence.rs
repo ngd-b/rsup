@@ -5,6 +5,7 @@ use pkg::package::package_json::{
     batch_update_dependencies, quick_install_dependencies, remove_dependencies,
     update_dependencies, QuickInstallParams, RemoveParams, UpdateParams,
 };
+use tokio::task;
 
 use crate::api::ResParams;
 use crate::socket::Ms;
@@ -38,9 +39,24 @@ pub fn api(cfg: &mut web::ServiceConfig) {
         .route("/graph", web::get().to(relation_graph))
         .route("/remove", web::post().to(remove_pkg))
         .route("/quickInstall", web::post().to(quick_install))
-        .route("/batchUpdate", web::post().to(batch_update_pkg));
+        .route("/batchUpdate", web::post().to(batch_update_pkg))
+        .route("/reload", web::post().to(relod_pkg));
 }
 
+async fn relod_pkg(data: web::Data<Ms>) -> impl Responder {
+    let data_clone = data.package.get_pkg().await;
+
+    //  异步更新依赖包信息
+    task::spawn(async move {
+        pkg::read_latest_pkgs(data_clone.path, data.package.clone()).await;
+    });
+
+    let res = ResParams::ok("");
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(serde_json::to_string(&res).unwrap())
+}
 /// 获取数据接口
 async fn get_data(data: web::Data<Ms>) -> impl Responder {
     let data_clone = data.package.get_pkg().await;
