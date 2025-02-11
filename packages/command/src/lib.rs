@@ -4,6 +4,7 @@ use clap::Parser;
 extern crate config as external_config;
 use config::Options as ConfigOptions;
 use rs_utils;
+use tokio::try_join;
 use update::Options as UpdateOptions;
 
 mod config;
@@ -18,7 +19,7 @@ pub enum Commands {
     #[clap(name = "update", about = "Update the rsup binary and web client")]
     Update {
         #[clap(subcommand)]
-        update: UpdateOptions,
+        update: Option<UpdateOptions>,
     },
 }
 
@@ -39,10 +40,24 @@ pub async fn run() {
 
             // 获取命令安装目录
             let config = external_config::Config::get_config().await;
+
+            // 更新的包名
             match update {
-                UpdateOptions::Rsup => UpdateOptions::rsup_update(rsup_url, &config.dir).await,
-                UpdateOptions::Web => {
-                    UpdateOptions::rsup_web_update(rsup_web_url, &config.dir).await
+                Some(options) => match options {
+                    UpdateOptions::Rsup => UpdateOptions::rsup_update(rsup_url, &config.dir).await,
+                    UpdateOptions::Web => {
+                        UpdateOptions::rsup_web_update(rsup_web_url, &config.dir).await
+                    }
+                },
+                None => {
+                    // 两个都更新
+                    let rsup = UpdateOptions::rsup_update(rsup_url, &config.dir);
+                    let web = UpdateOptions::rsup_web_update(rsup_web_url, &config.dir);
+
+                    match try_join!(rsup, web) {
+                        Ok(_) => Ok(()),
+                        Err(err) => Err(err),
+                    }
                 }
             }
         }
