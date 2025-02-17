@@ -65,10 +65,10 @@ pub struct Pkg {
     // pnpm9
     #[serde(default)]
     pub snapshots: HashMap<String, PkgInfo>,
-    #[serde(default)]
-    pub dep_name: String,
-    #[serde(default)]
-    pub pkg_info: PkgInfo,
+    // #[serde(default)]
+    // pub dep_name: String,
+    // #[serde(default)]
+    // pub pkg_info: PkgInfo,
 }
 
 impl Default for Pkg {
@@ -83,25 +83,23 @@ impl Default for Pkg {
             importers: HashMap::new(),
             packages: HashMap::new(),
             snapshots: HashMap::new(),
-            dep_name: Default::default(),
-            pkg_info: PkgInfo::default(),
+            // dep_name: Default::default(),
+            // pkg_info: PkgInfo::default(),
         }
     }
 }
 
 impl PkgLock for Pkg {
-    fn new(dep_name: String, file_path: String) -> Pkg {
+    fn new(file_path: String) -> Pkg {
         println!("开始从{}读取依赖关系...", file_path);
         // 根据版本应用不同的实例
-        let mut pkg = Pkg::read_pkg(file_path).unwrap();
-        println!("读取{}依赖关系完成", &dep_name);
-        pkg.dep_name = dep_name;
-        println!("读取的文件数据{:#?}", &pkg);
+        let pkg = Pkg::read_pkg(file_path.clone()).unwrap();
+        println!("读取{}依赖关系完成", file_path);
         pkg
     }
 
     /// 读取某个依赖的依赖关系图
-    fn read_pkg_graph(&mut self) -> Result<PkgInfo, Box<dyn Error>> {
+    fn read_pkg_graph(&self, dep_name: String) -> Result<PkgInfo, Box<dyn Error>> {
         // 如果当前npm版本很低，则不支持查询
         if self.lockfile_version != "6.0" && self.lockfile_version != "9.0" {
             return Err("当前pnpm版本不支持查询依赖关系图".into());
@@ -112,10 +110,10 @@ impl PkgLock for Pkg {
             &HashMap<String, PkgDependence>,
         )|
          -> PkgDependence {
-            if dependencies.contains_key(&self.dep_name) {
-                dependencies.get(&self.dep_name).unwrap().clone()
+            if dependencies.contains_key(&dep_name) {
+                dependencies.get(&dep_name).unwrap().clone()
             } else {
-                dev_dependencies.get(&self.dep_name).unwrap().clone()
+                dev_dependencies.get(&dep_name).unwrap().clone()
             }
         };
 
@@ -130,33 +128,27 @@ impl PkgLock for Pkg {
             };
             find_dependence((&importer.dependencies, &importer.dev_dependencies))
         };
-        let key = self.get_package_key(&self.dep_name, &dependence.version);
+        let key = self.get_package_key(&dep_name, &dependence.version);
 
-        // if !self.packages.contains_key(&key) {
-        //     return Err(format!("当前路径未找到依赖：{}", self.dep_name).into());
-        // }
-        // 记录依赖已被访问
-        // self.visited.insert(key.clone(), self.pkg_info.clone());
-
-        self.pkg_info = match self.get_package_info(&key) {
+        let mut pkg_info = match self.get_package_info(&key) {
             Some(info) => info,
             None => {
-                return Err(format!("当前路径未找到依赖：{}", self.dep_name).into());
+                return Err(format!("当前路径未找到依赖：{}", &dep_name).into());
             }
         };
 
         // 当前依赖名称设置为顶层路径的依赖名
-        self.pkg_info.name = self.dep_name.clone();
-        self.pkg_info.path = key.clone();
-        self.pkg_info.version = dependence.version.clone();
+        pkg_info.name = dep_name.clone();
+        pkg_info.path = key.clone();
+        pkg_info.version = dependence.version.clone();
         // 开始递归查找依赖关系图
 
         let relations = self
-            .read_pkg_child_graph(self.pkg_info.clone(), vec![key])
+            .read_pkg_child_graph(pkg_info.clone(), vec![key])
             .unwrap();
 
-        self.pkg_info.relations = relations;
-        Ok(self.pkg_info.clone())
+        pkg_info.relations = relations;
+        Ok(pkg_info)
     }
 }
 
@@ -196,7 +188,7 @@ impl Pkg {
     }
 
     fn read_pkg_child_graph(
-        &mut self,
+        &self,
         parent: PkgInfo,
         visited: Vec<String>,
     ) -> Result<Vec<PkgInfo>, Box<dyn Error>> {
@@ -228,7 +220,7 @@ impl Pkg {
     /// 通常所有依赖都会被提升到顶级路径，有公用依赖就不需要重复安装
     ///
     fn read_pkg_graph_recursively(
-        &mut self,
+        &self,
         name: String,
         version: String,
         visited: Vec<String>,

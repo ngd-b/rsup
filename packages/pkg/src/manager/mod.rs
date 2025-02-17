@@ -4,11 +4,11 @@ mod npm_lock;
 mod pnpm_lock;
 mod yarn_lock;
 
-pub trait PkgLock {
-    fn new(dep_name: String, file_path: String) -> Self
+pub trait PkgLock: Send + Sync {
+    fn new(file_path: String) -> Self
     where
         Self: Sized;
-    fn read_pkg_graph(&mut self) -> Result<PkgInfo, Box<dyn Error>>;
+    fn read_pkg_graph(&self, name: String) -> Result<PkgInfo, Box<dyn Error>>;
 }
 
 /**
@@ -101,12 +101,12 @@ impl Default for PkgInfo {
  * 不同的包管理器对应的锁文件解析器
  *
  */
-pub fn pkg_lock(name: &str, dep_name: String, file_path: String) -> Box<dyn PkgLock> {
-    let manage_type = ManagerType::from_str(name);
+pub fn pkg_lock(name: String, file_path: String) -> Box<dyn PkgLock> {
+    let manage_type = ManagerType::from_str(&name);
     match manage_type {
-        ManagerType::Npm => Box::new(npm_lock::Pkg::new(dep_name, file_path)),
-        ManagerType::Yarn => Box::new(yarn_lock::Pkg::new(dep_name, file_path)),
-        ManagerType::Pnpm => Box::new(pnpm_lock::Pkg::new(dep_name, file_path)),
+        ManagerType::Npm => Box::new(npm_lock::Pkg::new(file_path)),
+        ManagerType::Yarn => Box::new(yarn_lock::Pkg::new(file_path)),
+        ManagerType::Pnpm => Box::new(pnpm_lock::Pkg::new(file_path)),
     }
 }
 /**
