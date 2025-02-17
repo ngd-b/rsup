@@ -15,7 +15,7 @@ use rand::{thread_rng, Rng};
 use socket::{ConnId, Ms};
 mod api;
 use config::Config;
-use tokio::try_join;
+// use tokio::try_join;
 use webbrowser;
 
 async fn index() -> impl Responder {
@@ -84,10 +84,10 @@ pub async fn run(data: Package) {
     let local_ip = local_ip().expect("Could not get local IP address");
 
     // 启动浏览器
-    let service_url = format!("http://{}:{}", local_ip, port);
+    let service_url = format!("http://localhost:{}", port);
     if webbrowser::open(&service_url).is_ok() {
         println!("Server running at:");
-        println!("  - http://127.0.0.1:{}", port);
+        println!("  - http://localhost:{}", port);
         println!("  - http://{}:{}", local_ip, port);
     };
 
@@ -102,7 +102,7 @@ pub async fn run(data: Package) {
     let static_file_path = config.web.static_dir.clone();
 
     println!("web服务资源路径：{}", &static_file_path);
-    let server = HttpServer::new(move || {
+    let _server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()
             .allow_any_method()
@@ -122,8 +122,8 @@ pub async fn run(data: Package) {
     .workers(5)
     .bind(format!("0.0.0.0:{}", port))
     .unwrap_or_else(|_| panic!("Could not start server on port:{}", port))
-    .run();
+    .run()
+    .await;
 
-    // try_join!(receiver_server).unwrap();
-    try_join!(server).unwrap();
+    // try_join!(server).unwrap();
 }
