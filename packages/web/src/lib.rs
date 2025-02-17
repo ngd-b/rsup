@@ -56,7 +56,7 @@ async fn socket_index(
             client_ip, id
         );
 
-        Ms::handle_message(data_clone.package, session, msg_stream).await;
+        Ms::handle_message(data_clone, session, msg_stream, id).await;
     });
     Ok(res)
 }

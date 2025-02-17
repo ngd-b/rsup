@@ -37,13 +37,18 @@ impl Ms {
     /// - 处理socket消息
     ///
     /// - 处理channel通道消息
-    pub async fn handle_message(ms: Package, mut session: Session, mut msg_stream: MessageStream) {
+    pub async fn handle_message(
+        ms: Ms,
+        mut session: Session,
+        mut msg_stream: MessageStream,
+        socket_id: usize,
+    ) {
         // 向前端发送消息
         // let ms_clone = ms.clone();
 
-        let data_clone = ms.get_pkg().await;
+        let pkg_clone = ms.package.get_pkg().await;
 
-        Ms::send_message(data_clone, &mut session).await;
+        Ms::send_message(pkg_clone, &mut session).await;
 
         loop {
             tokio::select! {
@@ -52,6 +57,12 @@ impl Ms {
                         Message::Close(reason) => {
                             // 关闭连接
                             println!("client close with reason: {:?}", reason);
+                            // 关系连接后，移除记录
+                            {
+                                let mut ms_clone = ms.connectors.lock().await;
+
+                                ms_clone.remove(&socket_id);
+                            }
                             break;
                         }
                         Message::Ping(bytes) => {
