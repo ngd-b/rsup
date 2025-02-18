@@ -6,6 +6,8 @@ use serde_yaml;
 ///
 use std::{collections::HashMap, error::Error, fs::File, io::BufReader, path::Path};
 
+use super::{LockPkg, ManagerType};
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgSetting {
     #[serde(default)]
@@ -149,6 +151,15 @@ impl PkgLock for Pkg {
 
         pkg_info.relations = relations;
         Ok(pkg_info)
+    }
+
+    fn get_data(&self) -> LockPkg {
+        let v = self.lockfile_version.parse::<i32>().unwrap_or(0);
+        LockPkg {
+            name: ManagerType::Pnpm.to_string(),
+            version: v,
+            packages: self.packages.clone(),
+        }
     }
 }
 

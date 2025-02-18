@@ -5,6 +5,8 @@ use serde_derive::{Deserialize, Serialize};
 ///
 use std::{collections::HashMap, error::Error, fs::File, io::BufReader, path::Path};
 
+use super::{LockPkg, ManagerType};
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pkg {
     #[serde(default)]
@@ -70,6 +72,14 @@ impl PkgLock for Pkg {
 
         pkg_info.relations = relations.clone();
         Ok(pkg_info)
+    }
+
+    fn get_data(&self) -> LockPkg {
+        LockPkg {
+            name: ManagerType::Npm.to_string(),
+            version: self.lockfile_version,
+            packages: self.packages.clone(),
+        }
     }
 }
 

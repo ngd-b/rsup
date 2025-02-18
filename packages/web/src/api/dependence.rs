@@ -39,6 +39,7 @@ pub enum ReqParams {
 pub fn api(cfg: &mut web::ServiceConfig) {
     // 依赖
     cfg.route("/get", web::get().to(get_data))
+        .route("/lock", web::get().to(get_lock_data))
         .route("/update", web::post().to(update_pkg))
         .route("/graph", web::get().to(relation_graph))
         .route("/realtion", web::get().to(relation_data))
@@ -67,6 +68,22 @@ async fn get_data(data: web::Data<Ms>) -> impl Responder {
     let data_clone = data.package.get_pkg().await;
 
     let res = ResParams::ok(data_clone.clone());
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(serde_json::to_string(&res).unwrap())
+}
+
+///
+/// 获取文件package-lock文件
+///
+async fn get_lock_data(data: web::Data<Ms>) -> impl Responder {
+    let data_clone = data.package.get_pkg().await;
+
+    let (manager_name, pkg_path) = (data_clone.manager_name.unwrap(), data_clone.path);
+    let pkg = pkg_lock(manager_name.clone(), pkg_path.clone());
+
+    let res = ResParams::ok(pkg.get_data());
 
     HttpResponse::Ok()
         .content_type("application/json")

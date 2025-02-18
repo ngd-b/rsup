@@ -9,6 +9,17 @@ pub trait PkgLock: Send + Sync {
     where
         Self: Sized;
     fn read_pkg_graph(&self, name: String) -> Result<PkgInfo, Box<dyn Error>>;
+    fn get_data(&self) -> LockPkg;
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LockPkg {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub version: i32,
+    #[serde(default)]
+    pub packages: HashMap<String, PkgInfo>,
 }
 
 /**
@@ -64,6 +75,8 @@ pub struct PkgInfo {
     pub peer_dependencies: HashMap<String, String>,
     #[serde(default)]
     pub dependencies: HashMap<String, String>,
+    #[serde(default, rename = "devDependencies")]
+    pub dev_dependencies: HashMap<String, String>,
     #[serde(default)]
     pub is_peer: bool,
     // 是否相互依赖
@@ -88,6 +101,7 @@ impl Default for PkgInfo {
             has_install_script: Default::default(),
             has_shrinkwrap: Default::default(),
             peer_dependencies: HashMap::new(),
+            dev_dependencies: HashMap::new(),
             dependencies: HashMap::new(),
             is_peer: false,
             is_loop: false,
