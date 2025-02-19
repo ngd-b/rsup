@@ -34,13 +34,13 @@ async fn _run_package(args: Args) {
     }
 }
 
-fn run_package_lock(args: Args, name: String) -> Result<manager::PkgInfo, Box<dyn Error>> {
+fn run_package_lock(args: Args) -> Result<manager::PkgInfo, Box<dyn Error>> {
     let file_path = file_exist(args.dir.to_string());
     // package::package_lock::Pkg::read_pkg_graph(name, file_path)
     // let mut pkg = manager::pkg_lock("npm", name, file_path);
-    let mut pkg = manager::pkg_lock("pnpm", name, file_path);
+    let pkg = manager::pkg_lock("pnpm".to_string(), file_path);
 
-    let pkg_info = pkg.read_pkg_graph().unwrap();
+    let pkg_info = pkg.read_pkg_graph("vue".to_string()).unwrap();
 
     Ok(pkg_info)
 }
@@ -53,7 +53,7 @@ async fn main() {
 
     // 测试读取package-lock.json文件
     // match run_package_lock(args, "vue".to_string()) {
-    match run_package_lock(args, "vite".to_string()) {
+    match run_package_lock(args) {
         Ok(pkg) => {
             println!("{:#?}", pkg)
         }

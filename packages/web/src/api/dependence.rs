@@ -1,11 +1,15 @@
 use actix_web::http::Error;
 use actix_web::{web, HttpResponse, Responder};
-use pkg::manager::pkg_lock;
+use pkg::manager::{pkg_lock, PkgInfo};
+use pkg::package::package_info::PkgInfo as DepPkgInfo;
 use pkg::package::package_json::{
     batch_update_dependencies, quick_install_dependencies, remove_dependencies,
     update_dependencies, QuickInstallParams, RemoveParams, UpdateParams,
 };
-use tokio::task;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::task::{self};
 
 use crate::api::ResParams;
 use crate::socket::Ms;
@@ -35,8 +39,10 @@ pub enum ReqParams {
 pub fn api(cfg: &mut web::ServiceConfig) {
     // 依赖
     cfg.route("/get", web::get().to(get_data))
+        .route("/lock", web::get().to(get_lock_data))
         .route("/update", web::post().to(update_pkg))
         .route("/graph", web::get().to(relation_graph))
+        .route("/realtion", web::get().to(relation_data))
         .route("/remove", web::post().to(remove_pkg))
         .route("/quickInstall", web::post().to(quick_install))
         .route("/batchUpdate", web::post().to(batch_update_pkg))
@@ -62,6 +68,22 @@ async fn get_data(data: web::Data<Ms>) -> impl Responder {
     let data_clone = data.package.get_pkg().await;
 
     let res = ResParams::ok(data_clone.clone());
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(serde_json::to_string(&res).unwrap())
+}
+
+///
+/// 获取文件package-lock文件
+///
+async fn get_lock_data(data: web::Data<Ms>) -> impl Responder {
+    let data_clone = data.package.get_pkg().await;
+
+    let (manager_name, pkg_path) = (data_clone.manager_name.unwrap(), data_clone.path);
+    let pkg = pkg_lock(manager_name.clone(), pkg_path.clone());
+
+    let res = ResParams::ok(pkg.get_data());
 
     HttpResponse::Ok()
         .content_type("application/json")
@@ -159,12 +181,8 @@ async fn relation_graph(
             let data_clone = data.package.get_pkg().await;
 
             // 调用pkg读取依赖关系图
-            let mut pkg = pkg_lock(
-                &data_clone.manager_name.unwrap(),
-                params.name.clone(),
-                data_clone.path.clone(),
-            );
-            match pkg.read_pkg_graph() {
+            let pkg = pkg_lock(data_clone.manager_name.unwrap(), data_clone.path.clone());
+            match pkg.read_pkg_graph(params.name.clone()) {
                 Ok(pkg_info) => {
                     let res = ResParams::ok(pkg_info);
 
@@ -192,6 +210,54 @@ async fn relation_graph(
                 .body(serde_json::to_string(&res).unwrap()))
         }
     }
+}
+
+/// 获取某个依赖包的依赖关系图
+///
+/// 前端项目安装指定的版本依赖
+async fn relation_data(data: web::Data<Ms>) -> Result<impl Responder, Error> {
+    println!("receive 【relation_graph】 req param");
+
+    let data_clone = data.package.get_pkg().await;
+
+    // 读取lock文件
+    let (manager_name, pkg_path) = (data_clone.manager_name.unwrap(), data_clone.path);
+    let pkg = Arc::new(pkg_lock(manager_name.clone(), pkg_path.clone()));
+
+    let vec_pkg = Arc::new(Mutex::new(HashMap::<String, PkgInfo>::new()));
+
+    // 提取一个公共方法
+    let read_pkg_task = |data: HashMap<String, DepPkgInfo>| {
+        data.iter()
+            .map(|(name, _)| {
+                let pkg_clone = pkg.clone();
+                let vec_pkg_clone = vec_pkg.clone();
+                let name_clone = name.clone();
+                task::spawn(async move {
+                    let info = pkg_clone.read_pkg_graph(name_clone.clone()).unwrap();
+
+                    let mut vec_pkg = vec_pkg_clone.lock().await;
+                    vec_pkg.insert(name_clone, info);
+                })
+            })
+            .collect::<Vec<_>>()
+    };
+
+    // 并行
+    let dep_task = read_pkg_task(data_clone.dependencies);
+
+    let dev_dep_task = read_pkg_task(data_clone.dev_dependencies);
+
+    let _dep = futures_util::future::join_all(dep_task).await;
+    let _dev_dep = futures_util::future::join_all(dev_dep_task).await;
+
+    let res_data = vec_pkg.lock().await;
+    let res = ResParams::ok(res_data.clone());
+
+    // res.data = Some(ResType::Relation(pkg.pkg_info));
+    Ok(HttpResponse::Ok()
+        .content_type("application/json")
+        .body(serde_json::to_string(&res).unwrap()))
 }
 
 /// 删除依赖包

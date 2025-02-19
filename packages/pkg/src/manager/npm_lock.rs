@@ -5,6 +5,8 @@ use serde_derive::{Deserialize, Serialize};
 ///
 use std::{collections::HashMap, error::Error, fs::File, io::BufReader, path::Path};
 
+use super::{LockPkg, ManagerType};
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pkg {
     #[serde(default)]
@@ -16,10 +18,10 @@ pub struct Pkg {
     pub lockfile_version: i32,
     #[serde(default)]
     pub packages: HashMap<String, PkgInfo>,
-    #[serde(default)]
-    pub dep_name: String,
-    #[serde(default)]
-    pub pkg_info: PkgInfo,
+    // #[serde(default)]
+    // pub dep_name: String,
+    // #[serde(default)]
+    // pub pkg_info: PkgInfo,
 }
 
 impl Default for Pkg {
@@ -29,50 +31,55 @@ impl Default for Pkg {
             version: Default::default(),
             lockfile_version: Default::default(),
             packages: HashMap::new(),
-            dep_name: Default::default(),
-            pkg_info: PkgInfo::default(),
+            // dep_name: Default::default(),
+            // pkg_info: PkgInfo::default(),
         }
     }
 }
 
 impl PkgLock for Pkg {
-    fn new(dep_name: String, file_path: String) -> Pkg {
+    fn new(file_path: String) -> Pkg {
         println!("开始从{}读取依赖关系...", file_path);
-
-        let mut pkg = Pkg::read_pkg(file_path).unwrap();
-        println!("读取{}依赖关系完成", &dep_name);
-        pkg.dep_name = dep_name;
-
+        let pkg = Pkg::read_pkg(file_path.clone()).unwrap();
+        println!("读取{}依赖关系完成", file_path);
         pkg
     }
 
     /// 读取某个依赖的依赖关系图
-    fn read_pkg_graph(&mut self) -> Result<PkgInfo, Box<dyn Error>> {
+    fn read_pkg_graph(&self, dep_name: String) -> Result<PkgInfo, Box<dyn Error>> {
         // 如果当前npm版本很低，则不支持查询
         if self.lockfile_version < 2 {
             return Err("当前npm版本不支持查询依赖关系图".into());
         }
         // 嵌套路径
-        let prefix = [self.dep_name.clone()].to_vec();
+        let prefix = [dep_name.clone()].to_vec();
         let key = format!("{}/{}", "node_modules", prefix.join("/node_modules/"));
         if !self.packages.contains_key(&key) {
-            return Err(format!("当前路径未找到依赖：{}", self.dep_name).into());
+            return Err(format!("当前路径未找到依赖：{}", &dep_name).into());
         }
         // 记录依赖已被访问
         // self.visited.insert(key.clone(), self.pkg_info.clone());
 
-        self.pkg_info = self.packages.get(&key).unwrap().clone();
+        let mut pkg_info = self.packages.get(&key).unwrap().clone();
         // 当前依赖名称设置为顶层路径的依赖名
-        self.pkg_info.name = self.dep_name.clone();
-        self.pkg_info.path = key;
+        pkg_info.name = dep_name.clone();
+        pkg_info.path = key;
         // 开始递归查找依赖关系图
-        let key = format!("{}@{}", self.pkg_info.name, self.pkg_info.version);
+        let key = format!("{}@{}", pkg_info.name, pkg_info.version);
         let relations = self
-            .read_pkg_child_graph(self.pkg_info.clone(), prefix, vec![key])
+            .read_pkg_child_graph(pkg_info.clone(), prefix, vec![key])
             .unwrap();
 
-        self.pkg_info.relations = relations;
-        Ok(self.pkg_info.clone())
+        pkg_info.relations = relations.clone();
+        Ok(pkg_info)
+    }
+
+    fn get_data(&self) -> LockPkg {
+        LockPkg {
+            name: ManagerType::Npm.to_string(),
+            version: self.lockfile_version,
+            packages: self.packages.clone(),
+        }
     }
 }
 
@@ -98,7 +105,7 @@ impl Pkg {
     }
 
     fn read_pkg_child_graph(
-        &mut self,
+        &self,
         parent: PkgInfo,
         prefix: Vec<String>,
         visited: Vec<String>,
@@ -115,7 +122,7 @@ impl Pkg {
                     .unwrap();
 
                 child.is_peer = is_peer;
-                relations.push(child);
+                relations.push(child.clone());
             }
         };
 
@@ -129,7 +136,7 @@ impl Pkg {
     /// 通常所有依赖都会被提升到顶级路径，有公用依赖就不需要重复安装
     ///
     fn read_pkg_graph_recursively(
-        &mut self,
+        &self,
         prefix: Vec<String>,
         visited: Vec<String>,
     ) -> Result<PkgInfo, Box<dyn Error>> {

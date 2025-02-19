@@ -4,11 +4,22 @@ mod npm_lock;
 mod pnpm_lock;
 mod yarn_lock;
 
-pub trait PkgLock {
-    fn new(dep_name: String, file_path: String) -> Self
+pub trait PkgLock: Send + Sync {
+    fn new(file_path: String) -> Self
     where
         Self: Sized;
-    fn read_pkg_graph(&mut self) -> Result<PkgInfo, Box<dyn Error>>;
+    fn read_pkg_graph(&self, name: String) -> Result<PkgInfo, Box<dyn Error>>;
+    fn get_data(&self) -> LockPkg;
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LockPkg {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub version: i32,
+    #[serde(default)]
+    pub packages: HashMap<String, PkgInfo>,
 }
 
 /**
@@ -64,6 +75,8 @@ pub struct PkgInfo {
     pub peer_dependencies: HashMap<String, String>,
     #[serde(default)]
     pub dependencies: HashMap<String, String>,
+    #[serde(default, rename = "devDependencies")]
+    pub dev_dependencies: HashMap<String, String>,
     #[serde(default)]
     pub is_peer: bool,
     // 是否相互依赖
@@ -88,6 +101,7 @@ impl Default for PkgInfo {
             has_install_script: Default::default(),
             has_shrinkwrap: Default::default(),
             peer_dependencies: HashMap::new(),
+            dev_dependencies: HashMap::new(),
             dependencies: HashMap::new(),
             is_peer: false,
             is_loop: false,
@@ -101,12 +115,12 @@ impl Default for PkgInfo {
  * 不同的包管理器对应的锁文件解析器
  *
  */
-pub fn pkg_lock(name: &str, dep_name: String, file_path: String) -> Box<dyn PkgLock> {
-    let manage_type = ManagerType::from_str(name);
+pub fn pkg_lock(name: String, file_path: String) -> Box<dyn PkgLock> {
+    let manage_type = ManagerType::from_str(&name);
     match manage_type {
-        ManagerType::Npm => Box::new(npm_lock::Pkg::new(dep_name, file_path)),
-        ManagerType::Yarn => Box::new(yarn_lock::Pkg::new(dep_name, file_path)),
-        ManagerType::Pnpm => Box::new(pnpm_lock::Pkg::new(dep_name, file_path)),
+        ManagerType::Npm => Box::new(npm_lock::Pkg::new(file_path)),
+        ManagerType::Yarn => Box::new(yarn_lock::Pkg::new(file_path)),
+        ManagerType::Pnpm => Box::new(pnpm_lock::Pkg::new(file_path)),
     }
 }
 /**
