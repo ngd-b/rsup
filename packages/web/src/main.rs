@@ -25,5 +25,5 @@ async fn main() {
         package.sender.lock().await.send(()).await.unwrap();
     });
 
-    run(package_clone).await;
+    run(package_clone, false).await;
 }

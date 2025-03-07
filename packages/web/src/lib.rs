@@ -76,7 +76,7 @@ pub fn check_is_busy_port(port: u16) -> u16 {
     port
 }
 
-pub async fn run(data: Package) {
+pub async fn run(data: Package, open_browser: bool) {
     let config = Config::get_config().await;
     // let port = 8088;
     let port = check_is_busy_port(config.web.port);
@@ -85,11 +85,15 @@ pub async fn run(data: Package) {
 
     // 启动浏览器
     let service_url = format!("http://localhost:{}", port);
-    if webbrowser::open(&service_url).is_ok() {
-        println!("Server running at:");
-        println!("  - http://localhost:{}", port);
-        println!("  - http://{}:{}", local_ip, port);
-    };
+
+    if open_browser {
+        if webbrowser::open(&service_url).is_err() {
+            println!("Failed to open browser.")
+        }
+    }
+    println!("Server running at:");
+    println!("  - http://localhost:{}", port);
+    println!("  - http://{}:{}", local_ip, port);
 
     // 创建socket实例
     let ms = Ms::new(data);

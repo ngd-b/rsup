@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{value_parser, Parser};
 use pkg::package::Package;
 
 use command::{run, Commands};
@@ -12,6 +12,14 @@ struct Cli {
     command: Option<Commands>,
     #[clap(flatten)]
     pkg_args: pkg::Args,
+    #[arg(
+        short,
+        long,
+        default_value = "false",
+        value_parser=value_parser!(bool),
+        help = "Default open browser when servier start"
+    )]
+    quit: bool,
 }
 
 #[tokio::main]
@@ -31,7 +39,7 @@ async fn main() {
                 pkg::run(args.pkg_args, package_clone).await;
             });
 
-            web::run(package.clone()).await;
+            web::run(package.clone(), !args.quit).await;
         }
     }
 }
