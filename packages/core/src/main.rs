@@ -6,7 +6,7 @@ use tokio::task;
 use web;
 
 #[derive(Parser, Debug)]
-#[command(name = "rsup", author, version, about)]
+#[command(name = "rsup", author, about, disable_version_flag = true)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -20,12 +20,18 @@ struct Cli {
         help = "Default open browser when servier start"
     )]
     quit: bool,
+    #[arg(short, long, help = "Show version about rsup and rsup-web")]
+    version: bool,
 }
 
 #[tokio::main]
 async fn main() {
     let args = Cli::parse();
 
+    if args.version {
+        command::show_version().await;
+        return;
+    }
     match args.command {
         Some(Commands::Config { .. }) | Some(Commands::Update { .. }) => {
             run().await;

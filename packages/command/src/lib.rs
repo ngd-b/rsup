@@ -9,6 +9,7 @@ use update::Options as UpdateOptions;
 
 mod config;
 mod update;
+
 #[derive(Parser, Debug)]
 pub enum Commands {
     #[clap(name = "config", about = "Manage the config file")]
@@ -62,4 +63,15 @@ pub async fn run() {
             }
         }
     };
+}
+
+///
+/// 显示版本信息
+///
+///
+pub async fn show_version() {
+    let config = external_config::Config::get_config().await;
+
+    println!("{}", config.version);
+    println!("web: {}", config.web.version);
 }
