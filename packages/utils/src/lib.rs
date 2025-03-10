@@ -7,6 +7,9 @@
 //!
 //!
 
+use reqwest::Client;
+use serde_derive::{Deserialize, Serialize};
+
 /// 环境变量模块,定义了变量结构体、查询方法
 pub mod env;
 /// 文件处理模块,定义了文件上传、下载、压缩方法
@@ -72,4 +75,59 @@ pub fn get_pkg_url(origin: Option<Origin>) -> (String, String) {
     web_url = format!("{}/rsup-web.tar.gz", web_url);
 
     (url, web_url)
+}
+
+///
+///
+/// 版本信息
+///     
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Version {
+    url: String,
+    tag_name: String,
+    name: String,
+}
+///
+/// 从github上获取当前版本信息
+///
+/// 包括rsup 和 rsup-web
+///
+/// # Arguments
+/// * name 命令名称
+///
+/// # Returns
+/// * 版本信息
+///
+pub async fn get_version(
+    name: String,
+    owner: Option<String>,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let url = format!(
+        "https://api.github.com/repos/{}/{}/releases/latest",
+        owner.unwrap_or("ngd-b".to_string()),
+        name
+    );
+
+    let client = Client::new();
+
+    println!("will load repo latest version from {}", &url);
+    let res = client
+        .get(url)
+        .header("Accept", "application/vnd.github+json")
+        .header("User-Agent", "rsup_utils")
+        .send()
+        .await?;
+
+    if res.status().is_success() {
+        let data = res.text().await?;
+        let version: Version = serde_json::from_str(&data)?;
+
+        Ok(version.name)
+    } else {
+        let error_message = format!("Request failed with status code: {}", res.status());
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            error_message,
+        )))
+    }
 }
