@@ -58,6 +58,7 @@ pub struct Config {
 /// web 配置结构体
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WebConfig {
+    pub version: String,
     pub port: u16,
     pub static_dir: String,
 }
@@ -72,9 +73,10 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             name: "rsup".to_string(),
-            version: "0.3.0".to_string(),
+            version: "".to_string(),
             dir: Default::default(),
             web: WebConfig {
+                version: "".to_string(),
                 port: 8888,
                 static_dir: Default::default(),
             },
@@ -118,7 +120,7 @@ impl Config {
     /// - `Result<Config, Error>`
     ///
 
-    pub fn write_config() -> Result<Config, Error> {
+    pub async fn write_config() -> Result<Config, Error> {
         let config_dir = Config::get_url();
 
         // 创建配置文件目录
@@ -145,6 +147,24 @@ impl Config {
         config.dir = config_dir.clone();
         // 静态文件目录
         config.web.static_dir = format!("{}/web", &config_dir);
+        // rsup 版本
+        match rsup_utils::get_version("rsup".to_string(), Option::None).await {
+            Ok(version) => {
+                config.version = version;
+            }
+            Err(e) => {
+                eprintln!("获取rsup版本失败:{}", e)
+            }
+        }
+        // 获取rsup-web 版本
+        match rsup_utils::get_version("rsup-web".to_string(), Option::None).await {
+            Ok(version) => {
+                config.web.version = version;
+            }
+            Err(e) => {
+                eprintln!("获取rsup-web版本失败:{}", e)
+            }
+        }
 
         let config_content = toml::to_string(&config)?;
         file.write_all(config_content.as_bytes())?;

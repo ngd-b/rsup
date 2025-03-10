@@ -1,6 +1,6 @@
 [package]
 name = "rsup_config"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "rsup 配置包"
 license = "MIT"
@@ -14,6 +14,7 @@ categories = ["command-line-utilities"]
 [dependencies]
 anyhow.workspace = true
 once_cell = "1.20.2"
+rsup_utils = { version = "0.1.3", path = "../utils" }
 serde = "1.0.210"
 serde_derive = "1.0.210"
 tokio = { version = "1.41.0", features = ["full"] }
